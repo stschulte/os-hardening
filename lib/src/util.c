@@ -46,10 +46,7 @@ void get_known_uids(void) {
   setpwent();
   for(nuids=0; (user = getpwent()) != NULL; nuids++) {
     if(nuids % UID_MALLOC_CHUNK == 0) {
-      if(uids == NULL)
-        uids = malloc(UID_MALLOC_CHUNK*sizeof(uid_t));
-      else
-        uids = realloc(uids, (nuids+UID_MALLOC_CHUNK)*sizeof(uid_t));
+      uids = realloc(uids, (nuids+UID_MALLOC_CHUNK)*sizeof(uid_t));
     }
     uids[nuids] = user->pw_uid;
   }
@@ -65,10 +62,7 @@ void get_known_gids(void) {
   setgrent();
   for(ngids=0; (group = getgrent()) != NULL; ngids++) {
     if(ngids % GID_MALLOC_CHUNK == 0) {
-      if(gids == NULL)
-        gids = malloc(GID_MALLOC_CHUNK*sizeof(gid_t));
-      else
-        gids = realloc(gids, (ngids+GID_MALLOC_CHUNK)*sizeof(gid_t));
+      gids = realloc(gids, (ngids+GID_MALLOC_CHUNK)*sizeof(gid_t));
     }
     gids[ngids] = group->gr_gid;
   }
