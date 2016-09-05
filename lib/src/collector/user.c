@@ -16,11 +16,20 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <dirent.h>
+
 int collector_user_evaluate(struct report* report) {
   struct passwd* user;
   struct spwd* shadow;
   struct stat sb_homedir;
+  struct stat sb_dotfile;
+  struct stat sb_netrc;
   struct passwd* owner;
+
+  DIR* homedir;
+  struct dirent* direntry;
+  char* dotfile;
+  char* netrc;
 
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
   struct check* pw_min = check_new("cis", "7.1.2", "Set Password Change Minimum Number of Day", CHECK_PASSED);
@@ -29,6 +38,10 @@ int collector_user_evaluate(struct report* report) {
 
   struct check* home_perm = check_new("cis", "9.2.7", "Check Permissions on User Home Directories", CHECK_PASSED);
   struct check* home_owner = check_new("cis", "9.2.13", "Check User Home Directory Ownership", CHECK_PASSED);
+
+  struct check* dotfile_perm = check_new("cis", "9.2.8", "Check User Dot File Permissions", CHECK_PASSED);
+
+  struct check* netrc_perm = check_new("cis", "9.2.9", "Check Permissions on User .netrc Files", CHECK_PASSED);
 
   setpwent();
   if(errno == EACCES) {
@@ -107,6 +120,58 @@ int collector_user_evaluate(struct report* report) {
             }
           }
         }
+
+        /* check all dotfiles within the homedirectory */
+        homedir = opendir(user->pw_dir);
+        while((direntry = readdir(homedir)) != NULL) {
+          if((strcmp(direntry->d_name, "..") == 0) || (strcmp(direntry->d_name, ".") == 0))
+            continue;
+
+          if(strncmp(direntry->d_name, ".", 1) == 0) {
+            if(strcmp(user->pw_dir, "/") == 0) {
+              dotfile = malloc(strlen(direntry->d_name) + 2);
+              sprintf(dotfile, "/%s", direntry->d_name);
+            }
+            else {
+              dotfile = malloc(strlen(user->pw_dir) + strlen(direntry->d_name) + 2);
+              sprintf(dotfile, "%s/%s", user->pw_dir, direntry->d_name);
+            }
+
+            stat(dotfile, &sb_dotfile);
+            if((sb_dotfile.st_mode & 0020) != 0) {
+              check_add_findingf(dotfile_perm, "group write permission set on following dotfile: %s (%3o)", dotfile, sb_dotfile.st_mode & 0777);
+            }
+            if((sb_dotfile.st_mode & 0002) != 0) {
+              check_add_findingf(dotfile_perm, "other write permission set on following dotfile: %s (%3o)", dotfile, sb_dotfile.st_mode & 0777);
+            }
+            free(dotfile);
+          }
+        }
+        closedir(homedir);
+
+        /* check .netrc file */
+        if(strcmp(user->pw_dir, "/") == 0) {
+          netrc = strdup("/.netrc");
+        }
+        else {
+          netrc = malloc(strlen(user->pw_dir) + 1 + strlen(".netrc") + 1);
+          sprintf(netrc, "%s/%s", user->pw_dir, ".netrc");
+        }
+        if(stat(netrc, &sb_netrc) == 0) {;
+          if(sb_netrc.st_mode & 0040)
+            check_add_findingf(netrc_perm, "group read set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
+          if(sb_netrc.st_mode & 0020)
+            check_add_findingf(netrc_perm, "group write set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
+          if(sb_netrc.st_mode & 0010)
+            check_add_findingf(netrc_perm, "group execute set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
+          if(sb_netrc.st_mode & 0004)
+            check_add_findingf(netrc_perm, "other read set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
+          if(sb_netrc.st_mode & 0002)
+            check_add_findingf(netrc_perm, "other write set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
+          if(sb_netrc.st_mode & 0001)
+            check_add_findingf(netrc_perm, "other execute set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
+        }
+        free(netrc);
       }
     }
   }
@@ -120,5 +185,7 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, root_group);
   report_add_check(report, home_perm);
   report_add_check(report, home_owner);
+  report_add_check(report, dotfile_perm);
+  report_add_check(report, netrc_perm);
   return 0;
 }
