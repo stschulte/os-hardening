@@ -30,6 +30,7 @@ int collector_user_evaluate(struct report* report) {
   struct dirent* direntry;
   char* dotfile;
   char* netrc;
+  char* rhost;
 
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
   struct check* pw_min = check_new("cis", "7.1.2", "Set Password Change Minimum Number of Day", CHECK_PASSED);
@@ -40,8 +41,9 @@ int collector_user_evaluate(struct report* report) {
   struct check* home_owner = check_new("cis", "9.2.13", "Check User Home Directory Ownership", CHECK_PASSED);
 
   struct check* dotfile_perm = check_new("cis", "9.2.8", "Check User Dot File Permissions", CHECK_PASSED);
-
   struct check* netrc_perm = check_new("cis", "9.2.9", "Check Permissions on User .netrc Files", CHECK_PASSED);
+
+  struct check* rhost_exist = check_new("cis", "9.2.10", "Check for Presence of User .rhosts Files", CHECK_PASSED);
 
   setpwent();
   if(errno == EACCES) {
@@ -172,6 +174,19 @@ int collector_user_evaluate(struct report* report) {
             check_add_findingf(netrc_perm, "other execute set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
         }
         free(netrc);
+
+        /* check rhost file */
+        if(strcmp(user->pw_dir, "/") == 0) {
+          rhost = strdup("/.rhosts");
+        }
+        else {
+          rhost = malloc(strlen(user->pw_dir) + 1 + strlen(".rhosts") + 1);
+          sprintf(rhost, "%s/%s", user->pw_dir, ".rhosts");
+        }
+        if(access(rhost, F_OK) == 0) {
+          check_add_findingf(rhost_exist, "rhost file found for user %s: %s", user->pw_name, rhost);
+        }
+        free(rhost);
       }
     }
   }
@@ -187,5 +202,6 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, home_owner);
   report_add_check(report, dotfile_perm);
   report_add_check(report, netrc_perm);
+  report_add_check(report, rhost_exist);
   return 0;
 }
