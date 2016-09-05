@@ -1,0 +1,5 @@
+#ifndef _PARAMETERS_H
+#define _PARAMETERS_H
+
+#define MIN_AGE @HARDEN_PASSWORD_MIN_AGE@
+#endif

@@ -1,0 +1,5 @@
+build/
+toolchain.cmake
+
+lib/inc/harden/version.h
+lib/inc/harden/parameters.h
