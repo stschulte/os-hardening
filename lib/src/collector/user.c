@@ -19,7 +19,7 @@
 int collector_user_evaluate(struct report* report) {
   struct passwd* user;
   struct spwd* shadow;
-  struct stat homedir;
+  struct stat sb_homedir;
   struct passwd* owner;
 
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
@@ -80,28 +80,30 @@ int collector_user_evaluate(struct report* report) {
     }
 
     errno = 0;
-    if(stat(user->pw_dir, &homedir) == 0) {
-      if(S_ISDIR(homedir.st_mode)) {
-        if((homedir.st_mode & 0020) != 0) {
-          check_add_findingf(home_perm, "user %s with group write permissions set on %s (%3o)", user->pw_name, user->pw_dir, homedir.st_mode & 07777);
+    if(stat(user->pw_dir, &sb_homedir) == 0) {
+      if(S_ISDIR(sb_homedir.st_mode)) {
+
+        /* check homedir itself */
+        if((sb_homedir.st_mode & 0020) != 0) {
+          check_add_findingf(home_perm, "user %s with group write permissions set on %s (%3o)", user->pw_name, user->pw_dir, sb_homedir.st_mode & 07777);
         }
-        if((homedir.st_mode & 0001) != 0) {
-          check_add_findingf(home_perm, "user %s with other read permissions set on %s (%3o)", user->pw_name, user->pw_dir, homedir.st_mode & 07777);
+        if((sb_homedir.st_mode & 0001) != 0) {
+          check_add_findingf(home_perm, "user %s with other read permissions set on %s (%3o)", user->pw_name, user->pw_dir, sb_homedir.st_mode & 07777);
         }
-        if((homedir.st_mode & 0002) != 0) {
-          check_add_findingf(home_perm, "user %s with other write permissions set on %s (%3o)", user->pw_name, user->pw_dir, homedir.st_mode & 07777);
+        if((sb_homedir.st_mode & 0002) != 0) {
+          check_add_findingf(home_perm, "user %s with other write permissions set on %s (%3o)", user->pw_name, user->pw_dir, sb_homedir.st_mode & 07777);
         }
-        if((homedir.st_mode & 0004) != 0) {
-          check_add_findingf(home_perm, "user %s with other execute permissions set on %s (%3o)", user->pw_name, user->pw_dir, homedir.st_mode & 07777);
+        if((sb_homedir.st_mode & 0004) != 0) {
+          check_add_findingf(home_perm, "user %s with other execute permissions set on %s (%3o)", user->pw_name, user->pw_dir, sb_homedir.st_mode & 07777);
         }
 
         if(user->pw_uid >= 500 && strcmp(user->pw_name, "nfsnobody") != 0) {
-          if(homedir.st_uid != user->pw_uid) {
-            if((owner = getpwuid(homedir.st_uid)) != NULL) {
+          if(sb_homedir.st_uid != user->pw_uid) {
+            if((owner = getpwuid(sb_homedir.st_uid)) != NULL) {
               check_add_findingf(home_owner, "user %s homedirectory %s is owned by %s", user->pw_name, user->pw_dir, owner->pw_name);
             }
             else {
-              check_add_findingf(home_owner, "user %s homedirectory %s is owned by unknown user (uid=%u)", user->pw_name, user->pw_dir, homedir.st_uid);
+              check_add_findingf(home_owner, "user %s homedirectory %s is owned by unknown user (uid=%u)", user->pw_name, user->pw_dir, sb_homedir.st_uid);
             }
           }
         }
