@@ -119,10 +119,18 @@ int collector_files_evaluate(struct report* report) {
   struct check* nouser = check_new("cis", "9.1.11", "Find un-owned files and directories", CHECK_PASSED);
   struct check* nogroup = check_new("cis", "9.1.12", "Find un-grouped files and directories", CHECK_PASSED);
 
+  struct check* crontab = check_new("cis", "6.1.4", "Set User/Group Owner and Permission on /etc/crontab", CHECK_PASSED);
+  struct check* cronhourly = check_new("cis", "6.1.5", "Set User/Group Owner and Permission on /etc/cron.hourly", CHECK_PASSED);
+
   verify_owner(owner_passwd, "/etc/passwd");
   verify_owner(owner_shadow, "/etc/shadow");
   verify_owner(owner_gshadow, "/etc/gshadow");
   verify_owner(owner_group, "/etc/group");
+
+  verify_owner(crontab, "/etc/crontab");
+  verify_perm(crontab, "/etc/crontab", 0600);
+  verify_owner(cronhourly, "/etc/cron.hourly");
+  verify_perm(cronhourly, "/etc/cron.hourly", 0700);
 
   verify_perm(perm_passwd, "/etc/passwd", 0644);
   verify_perm(perm_shadow, "/etc/shadow", 0000);
@@ -169,5 +177,8 @@ int collector_files_evaluate(struct report* report) {
   report_add_check(report, owner_shadow);
   report_add_check(report, owner_gshadow);
   report_add_check(report, owner_group);
+
+  report_add_check(report, crontab);
+  report_add_check(report, cronhourly);
   return 0;
 }

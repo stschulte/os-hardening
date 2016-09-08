@@ -18,19 +18,58 @@
 
 #include <dirent.h>
 
+void validate_homefile(struct check* check, struct passwd* user, const char* filename, mode_t mask) {
+  char* path;
+  struct stat sb;
+
+  if(strcmp(user->pw_dir, "/") == 0) {
+    path = malloc(strlen(filename) + 2);
+    sprintf(path, "/%s", filename);
+  }
+  else {
+    path = malloc(strlen(user->pw_dir) + strlen(filename) + 2);
+    sprintf(path, "%s/%s", user->pw_dir, filename);
+  }
+
+  if(stat(path, &sb) == 0) {;
+    if(mask == 0777) {
+      check_add_findingf(check, "user %s: found file %s in users homedirectory: %s", user->pw_name, filename, path);
+    }
+    else {
+      if((mask & 0040) != 0 && (sb.st_mode & 0040) != 0) {
+        check_add_findingf(check, "user %s: group read set on %s (mode=%3o)", user->pw_name, path, sb.st_mode & 0777);
+      }
+      if((mask & 0020) != 0 && (sb.st_mode & 0020) != 0) {
+        check_add_findingf(check, "user %s: group write set on %s (mode=%3o)", user->pw_name, path, sb.st_mode & 0777);
+      }
+      if((mask & 0010) != 0 && (sb.st_mode & 0010) != 0) {
+        check_add_findingf(check, "user %s: group execute set on %s (mode=%3o)", user->pw_name, path, sb.st_mode & 0777);
+      }
+      if((mask & 0004) != 0 && (sb.st_mode & 0004) != 0) {
+        check_add_findingf(check, "user %s: other read set on %s (mode=%3o)", user->pw_name, path, sb.st_mode & 0777);
+      }
+      if((mask & 0002) != 0 && (sb.st_mode & 0002) != 0) {
+        check_add_findingf(check, "user %s: other write set on %s (mode=%3o)", user->pw_name, path, sb.st_mode & 0777);
+      }
+      if((mask & 0001) != 0 && (sb.st_mode & 0001) != 0) {
+        check_add_findingf(check, "user %s: other execute set on %s (mode=%3o)", user->pw_name, path, sb.st_mode & 0777);
+      }
+    }
+  }
+
+  free(path);
+}
+
 int collector_user_evaluate(struct report* report) {
   struct passwd* user;
   struct spwd* shadow;
   struct stat sb_homedir;
-  struct stat sb_dotfile;
-  struct stat sb_netrc;
+  struct stat sb_file;
   struct passwd* owner;
 
   DIR* homedir;
   struct dirent* direntry;
-  char* dotfile;
-  char* netrc;
-  char* rhost;
+  char* file;
 
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
   struct check* pw_min = check_new("cis", "7.1.2", "Set Password Change Minimum Number of Day", CHECK_PASSED);
@@ -44,6 +83,11 @@ int collector_user_evaluate(struct report* report) {
   struct check* netrc_perm = check_new("cis", "9.2.9", "Check Permissions on User .netrc Files", CHECK_PASSED);
 
   struct check* rhost_exist = check_new("cis", "9.2.10", "Check for Presence of User .rhosts Files", CHECK_PASSED);
+  struct check* netrc_exist = check_new("cis", "9.2.18", "Check for Presence of User .netrc Files", CHECK_PASSED);
+  struct check* forward_exist = check_new("cis", "9.2.19", "Check for Presence of User .forward Files", CHECK_PASSED);
+
+  struct check* duplicate_uid = check_new("cis", "9.2.14", "Check for Duplicate UIDs", CHECK_PASSED);
+  struct check* duplicate_gid = check_new("cis", "9.2.15", "Check for Duplicate GIDs", CHECK_PASSED);
 
   setpwent();
   if(errno == EACCES) {
@@ -130,69 +174,20 @@ int collector_user_evaluate(struct report* report) {
             continue;
 
           if(strncmp(direntry->d_name, ".", 1) == 0) {
-            if(strcmp(user->pw_dir, "/") == 0) {
-              dotfile = malloc(strlen(direntry->d_name) + 2);
-              sprintf(dotfile, "/%s", direntry->d_name);
-            }
-            else {
-              dotfile = malloc(strlen(user->pw_dir) + strlen(direntry->d_name) + 2);
-              sprintf(dotfile, "%s/%s", user->pw_dir, direntry->d_name);
-            }
-
-            stat(dotfile, &sb_dotfile);
-            if((sb_dotfile.st_mode & 0020) != 0) {
-              check_add_findingf(dotfile_perm, "group write permission set on following dotfile: %s (%3o)", dotfile, sb_dotfile.st_mode & 0777);
-            }
-            if((sb_dotfile.st_mode & 0002) != 0) {
-              check_add_findingf(dotfile_perm, "other write permission set on following dotfile: %s (%3o)", dotfile, sb_dotfile.st_mode & 0777);
-            }
-            free(dotfile);
+            validate_homefile(dotfile_perm, user, direntry->d_name, 0022);
           }
         }
         closedir(homedir);
 
-        /* check .netrc file */
-        if(strcmp(user->pw_dir, "/") == 0) {
-          netrc = strdup("/.netrc");
-        }
-        else {
-          netrc = malloc(strlen(user->pw_dir) + 1 + strlen(".netrc") + 1);
-          sprintf(netrc, "%s/%s", user->pw_dir, ".netrc");
-        }
-        if(stat(netrc, &sb_netrc) == 0) {;
-          if(sb_netrc.st_mode & 0040)
-            check_add_findingf(netrc_perm, "group read set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
-          if(sb_netrc.st_mode & 0020)
-            check_add_findingf(netrc_perm, "group write set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
-          if(sb_netrc.st_mode & 0010)
-            check_add_findingf(netrc_perm, "group execute set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
-          if(sb_netrc.st_mode & 0004)
-            check_add_findingf(netrc_perm, "other read set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
-          if(sb_netrc.st_mode & 0002)
-            check_add_findingf(netrc_perm, "other write set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
-          if(sb_netrc.st_mode & 0001)
-            check_add_findingf(netrc_perm, "other execute set on %s (mode=%3o)", netrc, sb_netrc.st_mode & 0777);
-        }
-        free(netrc);
-
-        /* check rhost file */
-        if(strcmp(user->pw_dir, "/") == 0) {
-          rhost = strdup("/.rhosts");
-        }
-        else {
-          rhost = malloc(strlen(user->pw_dir) + 1 + strlen(".rhosts") + 1);
-          sprintf(rhost, "%s/%s", user->pw_dir, ".rhosts");
-        }
-        if(access(rhost, F_OK) == 0) {
-          check_add_findingf(rhost_exist, "rhost file found for user %s: %s", user->pw_name, rhost);
-        }
-        free(rhost);
+        validate_homefile(netrc_perm, user, ".netrc", 0077);
+        validate_homefile(rhost_exist, user, ".rhosts", 0777);
+        validate_homefile(forward_exist, user, ".forward", 0777);
+        validate_homefile(netrc_exist, user, ".netrc", 0777);
       }
     }
   }
   endpwent();
   endspent();
-
 
   report_add_check(report, pw_max);
   report_add_check(report, pw_min);
@@ -203,5 +198,7 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, dotfile_perm);
   report_add_check(report, netrc_perm);
   report_add_check(report, rhost_exist);
+  report_add_check(report, forward_exist);
+  report_add_check(report, netrc_exist);
   return 0;
 }
