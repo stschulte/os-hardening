@@ -115,27 +115,27 @@ int collector_user_evaluate(struct report* report) {
     if(!is_dialog_user(user))
       continue;
 
-    shadow = getspnam(user->pw_name);
+    if((shadow = getspnam(user->pw_name)) != NULL) {
+      if(shadow->sp_max == -1) {
+        check_add_findingf(pw_max, "user %s has maximum password disabled instead of 90 or less", user->pw_name);
+      }
+      else if(shadow->sp_max > 90) {
+        check_add_findingf(pw_max, "user %s has maximum password set to %ld instead of 90 or less", user->pw_name, shadow->sp_max);
+      }
 
-    if(shadow->sp_max == -1) {
-      check_add_findingf(pw_max, "user %s has maximum password disabled instead of 90 or less", user->pw_name);
-    }
-    else if(shadow->sp_max > 90) {
-      check_add_findingf(pw_max, "user %s has maximum password set to %ld instead of 90 or less", user->pw_name, shadow->sp_max);
-    }
+      if(shadow->sp_min == -1) {
+        check_add_findingf(pw_min, "user %s has minimum password disabled instead of 7 or more", user->pw_name);
+      }
+      else if(shadow->sp_min < 7) {
+        check_add_findingf(pw_min, "user %s has minimum password set to %ld instead of 7 or more", user->pw_name, shadow->sp_max);
+      }
 
-    if(shadow->sp_min == -1) {
-      check_add_findingf(pw_min, "user %s has minimum password disabled instead of 7 or more", user->pw_name);
-    }
-    else if(shadow->sp_min < 7) {
-      check_add_findingf(pw_min, "user %s has minimum password set to %ld instead of 7 or more", user->pw_name, shadow->sp_max);
-    }
-
-    if(shadow->sp_warn == -1) {
-      check_add_findingf(pw_warn, "user %s has password warning days disabled instead of 7 or more", user->pw_name);
-    }
-    else if(shadow->sp_warn < 7) {
-      check_add_findingf(pw_warn, "user %s has password warning days set to %ld instead of 7 or more", user->pw_name, shadow->sp_warn);
+      if(shadow->sp_warn == -1) {
+        check_add_findingf(pw_warn, "user %s has password warning days disabled instead of 7 or more", user->pw_name);
+      }
+      else if(shadow->sp_warn < 7) {
+        check_add_findingf(pw_warn, "user %s has password warning days set to %ld instead of 7 or more", user->pw_name, shadow->sp_warn);
+      }
     }
 
     errno = 0;
