@@ -3,3 +3,4 @@ toolchain.cmake
 
 lib/inc/harden/version.h
 lib/inc/harden/parameters.h
+lib/inc/harden/config.h
