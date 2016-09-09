@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8.11)
-project (harden)
+project (harden C)
 add_executable(harden
   exe/harden.c
   lib/src/check.c
