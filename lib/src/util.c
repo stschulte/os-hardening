@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pwd.h>
-#include <grp.h>
 #include <string.h>
 #include <harden/util.h>
+
+#include <pwd.h>
+#include <grp.h>
 
 #define UID_MALLOC_CHUNK 100
 #define GID_MALLOC_CHUNK 100
@@ -13,9 +14,20 @@ static gid_t* gids = NULL;
 static long int nuids = 0;
 static long int ngids = 0;
 
-void init_util(void) {
-  get_known_uids();
-  get_known_gids();
+void util_init(void) {
+  cache_known_uids();
+  cache_known_gids();
+}
+
+void util_clean(void) {
+  nuids = 0;
+  ngids = 0;
+
+  free(uids);
+  free(gids),
+
+  uids = NULL;
+  gids = NULL;
 }
 
 int compare_uid(const void* a, const void* b) {
@@ -40,7 +52,7 @@ int compare_gid(const void* a, const void* b) {
     return 1;
 }
 
-void get_known_uids(void) {
+void cache_known_uids(void) {
   struct passwd* user;
 
   setpwent();
@@ -56,7 +68,7 @@ void get_known_uids(void) {
   qsort(uids, nuids, sizeof(uid_t), compare_uid);
 }
 
-void get_known_gids(void) {
+void cache_known_gids(void) {
   struct group* group;
 
   setgrent();

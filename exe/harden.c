@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   struct report *r = report_new("foobar");
 
 
-  init_util();
+  util_init();
   
   printf("Collection OS information ...\n");
 
@@ -43,6 +43,8 @@ int main(int argc, char** argv) {
   collector_mount_evaluate(r);
   printf("Running collector: environ\n");
   collector_environ_evaluate(r);
+
+  util_clean();
 
   printf("\n\nSUMMARY:\n");
   report_print_summary(r);
