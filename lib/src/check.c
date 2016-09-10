@@ -12,7 +12,6 @@ struct check* check_new(const char* collection, const char* id, const char* summ
   check->summary = strdup(summary);
   check->result = result;
   check->findings = NULL;
-  check->findings_last = NULL;
   return check;
 }
 
@@ -20,16 +19,10 @@ void check_add_finding(struct check* check, const char* description) {
   struct finding *finding = malloc(sizeof(struct finding));
 
   strncpy(finding->finding, description, MAX_FINDING_LENGTH);
-  finding->next = NULL;
 
-  if(check->findings == NULL) {
-    check->findings = finding;
-    check->findings_last = finding;
-  }
-  else {
-    check->findings_last->next = finding;
-    check->findings_last = finding;
-  }
+
+  finding->next = check->findings;
+  check->findings = finding;
 
   check->result = CHECK_FAILED;
 }

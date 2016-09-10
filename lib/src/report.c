@@ -11,7 +11,6 @@ struct report* report_new(const char* caption) {
   strcpy(report->caption, caption);
 
   report->check_list = NULL;
-  report->check_list_last = NULL;
   return report;
 }
 
@@ -28,16 +27,9 @@ void report_add_check(struct report* r, struct check* c) {
   struct check_list *check_list = malloc(sizeof(struct check_list));
 
   check_list->check = c;
-  check_list->next = NULL;
 
-  if(r->check_list == NULL) {
-    r->check_list = check_list;
-    r->check_list_last = check_list;
-  }
-  else {
-    r->check_list_last->next = check_list;
-    r->check_list_last = check_list;
-  }
+  check_list->next = r->check_list;
+  r->check_list = check_list;
 }
 
 void report_print_summary(struct report *r) {

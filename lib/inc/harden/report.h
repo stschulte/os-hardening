@@ -6,7 +6,6 @@
 struct report {
   char* caption;
   struct check_list* check_list;
-  struct check_list* check_list_last;
 };
 
 void report_add_check(struct report* r, struct check* c);

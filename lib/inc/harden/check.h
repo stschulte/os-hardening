@@ -29,7 +29,6 @@ struct check {
   char* summary;
   enum check_result result;
   struct finding* findings;
-  struct finding* findings_last;
 };
 
 
