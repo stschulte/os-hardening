@@ -96,21 +96,15 @@ int is_dialog_user(struct passwd* user) {
 }
 
 int is_known_uid(uid_t uid) {
-  for(long i=0; i < nuids; i++) {
-    if(uids[i] == uid)
-      return 1;
-    else if(uids[i] > uid)
-      return 0;
-  }
-  return 0;
+  if(bsearch(&uid, uids, nuids, sizeof(uid_t), compare_uid) == NULL)
+    return 0;
+
+  return 1;
 }
 
 int is_known_gid(gid_t gid) {
-  for(long i=0; i < ngids; i++) {
-    if(gids[i] == gid)
-      return 1;
-    else if(gids[i] > gid)
-      return 0;
-  }
-  return 0;
+  if(bsearch(&gid, gids, ngids, sizeof(gid_t), compare_gid) == NULL)
+    return 0;
+
+  return 1;
 }
