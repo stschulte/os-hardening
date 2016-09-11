@@ -10,6 +10,8 @@
 
 #include <pwd.h>
 #include <shadow.h>
+#include <grp.h>
+
 #include <errno.h>
 
 #include <sys/types.h>
@@ -17,6 +19,150 @@
 #include <unistd.h>
 
 #include <dirent.h>
+
+#define USER_MALLOC_CHUNK 100
+#define GROUP_MALLOC_CHUNK 100
+
+int compare_users_by_uid(const void* a, const void *b) {
+  struct passwd* user_a = *( (struct passwd**)a );
+  struct passwd* user_b = *( (struct passwd**)b );
+  if(user_a->pw_uid == user_b->pw_uid)
+    return 0;
+  else if(user_a->pw_uid < user_b->pw_uid)
+    return -1;
+  else
+    return 1;
+}
+
+int compare_users_by_name(const void* a, const void *b) {
+  struct passwd* user_a = *( (struct passwd**)a );
+  struct passwd* user_b = *( (struct passwd**)b );
+  return strcmp(user_a->pw_name, user_b->pw_name);
+}
+
+int compare_groups_by_name(const void* a, const void* b) {
+  struct group* group_a = *( (struct group**)a );
+  struct group* group_b = *( (struct group**)b );
+  return strcmp(group_a->gr_name, group_b->gr_name);
+}
+
+int compare_groups_by_gid(const void* a, const void* b) {
+  struct group* group_a = *( (struct group**)a );
+  struct group* group_b = *( (struct group**)b );
+  if(group_a->gr_gid == group_b->gr_gid)
+    return 0;
+  else if(group_a->gr_gid < group_b->gr_gid)
+    return -1;
+  else
+    return 1;
+}
+
+void check_user_duplicates(struct check* duplicate_uid, struct check* duplicate_pwname) {
+  struct passwd* user;
+
+  int user_count = 0;
+  struct passwd* available_users = NULL;
+  struct passwd** available_users_by_name = NULL;
+  struct passwd** available_users_by_uid = NULL;
+
+  /* collect all users */
+  setpwent();
+  for(user_count = 0; (user = getpwent()) != NULL; user_count++) {
+    if(user_count % USER_MALLOC_CHUNK == 0) {
+      available_users = realloc(available_users, (user_count + USER_MALLOC_CHUNK)*sizeof(struct passwd));
+    }
+    available_users[user_count].pw_name = strdup(user->pw_name);
+    available_users[user_count].pw_uid = user->pw_uid;
+  }
+  endpwent();
+
+  /* create two arrays that are sorted by name and gid */
+  available_users_by_name = malloc(user_count * sizeof(struct passwd*));
+  available_users_by_uid = malloc(user_count * sizeof(struct passwd*));
+  for(int i=0; i < user_count; i++) {
+    available_users_by_name[i] = &available_users[i];
+    available_users_by_uid[i] = &available_users[i];
+  }
+  qsort(available_users_by_name, user_count, sizeof(struct passwd*), compare_users_by_name);
+  qsort(available_users_by_uid, user_count, sizeof(struct passwd*), compare_users_by_uid);
+
+  for(int i=1; i < user_count; i++) {
+    struct passwd* a;
+    struct passwd* b;
+
+    a = available_users_by_uid[i-1];
+    b = available_users_by_uid[i];
+    if(a->pw_uid == b->pw_uid) {
+      check_add_findingf(duplicate_uid, "user %s and %s have the same uid %u", a->pw_name, b->pw_name, a->pw_uid);
+    }
+
+    a = available_users_by_name[i-1];
+    b = available_users_by_name[i];
+    if(strcmp(a->pw_name, b->pw_name) == 0) {
+      check_add_findingf(duplicate_pwname, "user %s has two uids %u and %u", a->pw_name, a->pw_uid, b->pw_uid);
+    }
+  }
+
+  for(int i=0; i < user_count; i++)
+    free(available_users[i].pw_name);
+
+  free(available_users);
+  free(available_users_by_uid);
+  free(available_users_by_name);
+}
+void check_group_duplicates(struct check* duplicate_gid, struct check* duplicate_grname) {
+  struct group* group;
+
+  int group_count = 0;
+  struct group* available_groups = NULL;
+  struct group** available_groups_by_name = NULL;
+  struct group** available_groups_by_gid = NULL;
+
+  /* collect all groups */
+  setgrent();
+  for(group_count = 0; (group = getgrent()) != NULL; group_count++) {
+    if(group_count % GROUP_MALLOC_CHUNK == 0) {
+      available_groups = realloc(available_groups, (group_count + GROUP_MALLOC_CHUNK)*sizeof(struct group));
+    }
+    available_groups[group_count].gr_name = strdup(group->gr_name);
+    available_groups[group_count].gr_gid = group->gr_gid;
+  }
+  endgrent();
+
+  /* create two arrays that are sorted by name and gid */
+  available_groups_by_name = malloc(group_count * sizeof(struct group*));
+  available_groups_by_gid = malloc(group_count * sizeof(struct group*));
+  for(int i=0; i < group_count; i++) {
+    available_groups_by_name[i] = &available_groups[i];
+    available_groups_by_gid[i] = &available_groups[i];
+  }
+  qsort(available_groups_by_name, group_count, sizeof(struct group*), compare_groups_by_name);
+  qsort(available_groups_by_gid, group_count, sizeof(struct group*), compare_groups_by_gid);
+
+  for(int i=1; i < group_count; i++) {
+    struct group* a;
+    struct group* b;
+
+    a = available_groups_by_gid[i-1];
+    b = available_groups_by_gid[i];
+    if(a->gr_gid == b->gr_gid) {
+      check_add_findingf(duplicate_gid, "group %s and %s have the same gid %u", a->gr_name, b->gr_name, a->gr_gid);
+    }
+
+    a = available_groups_by_name[i-1];
+    b = available_groups_by_name[i];
+    if(strcmp(a->gr_name, b->gr_name) == 0) {
+      check_add_findingf(duplicate_grname, "group %s has two gids %u and %u", a->gr_name, a->gr_gid, b->gr_gid);
+    }
+  }
+
+  for(int i=0; i < group_count; i++)
+    free(available_groups[i].gr_name);
+
+  free(available_groups);
+  free(available_groups_by_gid);
+  free(available_groups_by_name);
+}
 
 void validate_homefile(struct check* check, struct passwd* user, const char* filename, mode_t mask) {
   char* path;
@@ -87,7 +233,13 @@ int collector_user_evaluate(struct report* report) {
   struct check* forward_exist = check_new("cis", "9.2.19", "Check for Presence of User .forward Files", CHECK_PASSED);
 
   struct check* duplicate_uid = check_new("cis", "9.2.14", "Check for Duplicate UIDs", CHECK_PASSED);
+  struct check* duplicate_pwname = check_new("cis", "9.2.16", "Check for Duplicate User Names", CHECK_PASSED);
+
   struct check* duplicate_gid = check_new("cis", "9.2.15", "Check for Duplicate GIDs", CHECK_PASSED);
+  struct check* duplicate_grname = check_new("cis", "9.2.17", "Check for Duplicate Group Names", CHECK_PASSED);
+
+  check_user_duplicates(duplicate_uid, duplicate_pwname);
+  check_group_duplicates(duplicate_gid, duplicate_grname);
 
   setpwent();
   if(errno == EACCES) {
@@ -203,5 +355,9 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, rhost_exist);
   report_add_check(report, forward_exist);
   report_add_check(report, netrc_exist);
+  report_add_check(report, duplicate_uid);
+  report_add_check(report, duplicate_gid);
+  report_add_check(report, duplicate_pwname);
+  report_add_check(report, duplicate_grname);
   return 0;
 }
