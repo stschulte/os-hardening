@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <harden/report.h>
 #include <harden/check.h>
 #include <stdlib.h>
@@ -32,16 +33,52 @@ void report_add_check(struct report* r, struct check* c) {
   r->check_list = check_list;
 }
 
+
+static int compare_check(struct check* a, struct check* b) {
+  int result = 0;
+  result = strcmp(a->collection, b->collection);
+  if(result == 0) {
+    result = strverscmp(a->id, b->id);
+  }
+
+  return result;
+}
+
+static void swap(struct check_list* a, struct check_list* b) {
+  struct check* temp = a->check;
+  a->check = b->check;
+  b->check = temp;
+}
+
+void sort_list(struct check_list* head) {
+  struct check_list* start = head;
+  struct check_list* traverse;
+  struct check_list* min;
+
+  while(start->next) {
+    min = start;
+    traverse = start->next;
+
+    while(traverse) {
+      if(compare_check(traverse->check, min->check) < 0) {
+        min = traverse;
+      }
+      traverse = traverse->next;
+    }
+    swap(start, min);
+    start = start->next;
+  }
+}
+
 void report_print_summary(struct report *r) {
   int checks_count = 0;
   int checks_passed = 0;
 
+  sort_list(r->check_list);
   struct check_list *list = r->check_list;
 
   struct check* check;
   struct finding* findings;
-  struct winsize w;
-  ioctl(0, TIOCGWINSZ, &w);
 
   while(list != NULL) {
     check = list->check;
@@ -54,7 +91,7 @@ void report_print_summary(struct report *r) {
     else {
       printf("[\033[31;1mFAILED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
       while(findings != NULL) {
-        printf("         \033[31m⤷\033[0m %s\n", findings->finding);
+        printf("     \033[31m[●]\033[0m %s\n", findings->finding);
         findings = findings->next;
       }
     }
