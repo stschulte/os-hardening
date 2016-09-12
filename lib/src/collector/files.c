@@ -121,6 +121,10 @@ int collector_files_evaluate(struct report* report) {
 
   struct check* crontab = check_new("cis", "6.1.4", "Set User/Group Owner and Permission on /etc/crontab", CHECK_PASSED);
   struct check* cronhourly = check_new("cis", "6.1.5", "Set User/Group Owner and Permission on /etc/cron.hourly", CHECK_PASSED);
+  struct check* crondaily = check_new("cis", "6.1.6", "Set User/Group Owner and Permission on /etc/cron.daily", CHECK_PASSED);
+  struct check* cronweekly = check_new("cis", "6.1.7", "Set User/Group Owner and Permission on /etc/cron.weekly", CHECK_PASSED);
+  struct check* cronmonthly = check_new("cis", "6.1.8", "Set User/Group Owner and Permission on /etc/cron.monthly", CHECK_PASSED);
+  struct check* crond = check_new("cis", "6.1.9", "Set User/Group Owner and Permission on /etc/cron.d", CHECK_PASSED);
 
   verify_owner(owner_passwd, "/etc/passwd");
   verify_owner(owner_shadow, "/etc/shadow");
@@ -129,8 +133,21 @@ int collector_files_evaluate(struct report* report) {
 
   verify_owner(crontab, "/etc/crontab");
   verify_perm(crontab, "/etc/crontab", 0600);
+
   verify_owner(cronhourly, "/etc/cron.hourly");
   verify_perm(cronhourly, "/etc/cron.hourly", 0700);
+
+  verify_owner(crondaily, "/etc/cron.daily");
+  verify_perm(crondaily, "/etc/cron.daily", 0700);
+
+  verify_owner(cronweekly, "/etc/cron.weekly");
+  verify_perm(cronweekly, "/etc/cron.weekly", 0700);
+
+  verify_owner(cronmonthly, "/etc/cron.monthly");
+  verify_perm(cronmonthly, "/etc/cron.monthly", 0700);
+
+  verify_owner(crond, "/etc/cron.d");
+  verify_perm(crond, "/etc/cron.d", 0700);
 
   verify_perm(perm_passwd, "/etc/passwd", 0644);
   verify_perm(perm_shadow, "/etc/shadow", 0000);
@@ -180,5 +197,9 @@ int collector_files_evaluate(struct report* report) {
 
   report_add_check(report, crontab);
   report_add_check(report, cronhourly);
+  report_add_check(report, crondaily);
+  report_add_check(report, cronweekly);
+  report_add_check(report, cronmonthly);
+  report_add_check(report, crond);
   return 0;
 }
