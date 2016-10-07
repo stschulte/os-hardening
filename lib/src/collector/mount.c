@@ -99,7 +99,7 @@ int collector_mount_evaluate(struct report* report) {
   }
 
   if(fs_var->result == CHECK_FAILED) {
-    check_add_finding(fs_tmp, "/var is no separate partition");
+    check_add_finding(fs_var, "/var is no separate partition");
   }
 
   if(fs_var_log->result == CHECK_FAILED)
