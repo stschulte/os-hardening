@@ -11,6 +11,9 @@
 #ifdef HAVE_KMOD
 #include <harden/collector/module.h>
 #endif
+#ifdef HAVE_RPM
+#include <harden/collector/rpm.h>
+#endif
 
 #include <harden/collector/selinux.h>
 #include <harden/collector/mount.h>
@@ -33,8 +36,8 @@ int main(int argc, char** argv) {
   collector_files_evaluate(r);
   printf("Running collector: user\n");
   collector_user_evaluate(r);
-  printf("Running collector: module\n");
 #ifdef HAVE_KMOD
+  printf("Running collector: module\n");
   collector_module_evaluate(r);
 #endif
   printf("Running collector: selinux\n");
@@ -43,6 +46,10 @@ int main(int argc, char** argv) {
   collector_mount_evaluate(r);
   printf("Running collector: environ\n");
   collector_environ_evaluate(r);
+#ifdef HAVE_RPM
+  printf("Running collector: rpm\n");
+  collector_rpm_evaluate(r);
+#endif
 
   util_clean();
 

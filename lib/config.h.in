@@ -1,1 +1,2 @@
 #cmakedefine HAVE_KMOD 1
+#cmakedefine HAVE_RPM 1

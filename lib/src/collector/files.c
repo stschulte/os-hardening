@@ -175,7 +175,7 @@ int collector_files_evaluate(struct report* report) {
     if((strchr(mount->mnt_fsname, ':') != NULL) || (strncmp(mount->mnt_fsname, "//", 2) == 0 && strcmp(mount->mnt_type, "cifs") == 0))
       continue;
 
-    //printf("collector/files: Checking files on %s\n", mount->mnt_dir);
+    printf("collector/files: Checking files on %s\n", mount->mnt_dir);
 
     struct stat sb;
     lstat(mount->mnt_dir, &sb);
