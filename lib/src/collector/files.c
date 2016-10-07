@@ -22,7 +22,7 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
   struct dirent *entry;
 
   if(!d) {
-    perror("Cannot open directory");
+    fprintf(stderr, "Cannot open directory %s: %s\n", dir_name, strerror(errno));
     return;
   }
 
