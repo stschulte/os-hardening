@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <mntent.h>
 #include <string.h>
 
 #include <rpm/header.h>
