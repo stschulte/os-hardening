@@ -8,7 +8,7 @@ set (HARDEN_VERSION_PATCH 0)
 
 set (HARDEN_PASSWORD_MIN_AGE 7)
 
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -pedantic -Wextra")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -pedantic -Wextra -std=gnu99")
 
 set(HARDEN_SOURCES exe/harden.c)
 
