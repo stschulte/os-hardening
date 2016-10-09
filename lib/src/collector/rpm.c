@@ -43,6 +43,16 @@ void report_add_check_package_absence(struct report* r, const char* collection, 
   report_add_check(r, c);
 }
 
+void report_add_check_package_present(struct report* r, const char* collection, const char* id, const char* summary, const char* pkgname) {
+  struct check* c = check_new(collection, id, summary, CHECK_PASSED);
+
+  if(!package_installed(pkgname)) {
+    check_add_findingf(c, "rpm package %s is not installed", pkgname);
+  }
+
+  report_add_check(r, c);
+}
+
 int collector_rpm_evaluate(struct report* report) {
 
   rpmReadConfigFiles(NULL, NULL);
@@ -61,6 +71,7 @@ int collector_rpm_evaluate(struct report* report) {
   report_add_check_package_absence(report, "cis", "2.1.10", "Remove talk-server", "talk-server");
   report_add_check_package_absence(report, "cis", "2.1.11", "Remove xinetd", "xinetd");
 
+  report_add_check_package_present(report, "cis", "1.3.1", "Install AIDE", "aide");
   rpmFreeRpmrc();
 
   return 0;
