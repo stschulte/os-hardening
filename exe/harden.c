@@ -18,6 +18,7 @@
 #include <harden/collector/selinux.h>
 #include <harden/collector/mount.h>
 #include <harden/collector/environ.h>
+#include <harden/collector/services.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -50,6 +51,8 @@ int main(int argc, char** argv) {
   printf("Running collector: rpm\n");
   collector_rpm_evaluate(r);
 #endif
+  printf("Running collector: services\n");
+  collector_services_evaluate(r);
 
   util_clean();
 
