@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <harden/report.h>
 #include <harden/check.h>
 #include <stdlib.h>
