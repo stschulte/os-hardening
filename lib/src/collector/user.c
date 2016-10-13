@@ -281,7 +281,7 @@ int collector_user_evaluate(struct report* report) {
           check_add_findingf(pw_min, "user %s has minimum password disabled instead of 7 or more", user->pw_name);
         }
         else if(shadow->sp_min < 7) {
-          check_add_findingf(pw_min, "user %s has minimum password set to %ld instead of 7 or more", user->pw_name, shadow->sp_max);
+          check_add_findingf(pw_min, "user %s has minimum password set to %ld instead of 7 or more", user->pw_name, shadow->sp_min);
         }
 
         if(shadow->sp_warn == -1) {
