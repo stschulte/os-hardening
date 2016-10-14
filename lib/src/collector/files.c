@@ -118,11 +118,38 @@ static void report_add_new_check_perm(struct report* r, const char* collection, 
   report_add_check(r, c);
 }
 
+void verify_os_info(struct check* c, const char* file) {
+  FILE* stream;
+  char* line = NULL;
+  size_t len = 0;
+  ssize_t read;
+
+  stream = fopen(file, "r");
+  if(stream == NULL)
+    return;
+
+  while((read = getline(&line, &len, stream)) != -1) {
+    if(strstr(line, "\\m") != NULL)
+      check_add_findingf(c, "%s contains \"\\m\" to print machine architecture", file);
+    if(strstr(line, "\\r") != NULL)
+      check_add_findingf(c, "%s contains \"\\r\" to print operating system release", file);
+    if(strstr(line, "\\s") != NULL)
+      check_add_findingf(c, "%s contains \"\\s\" to print operating system name", file);
+    if(strstr(line, "\\v") != NULL)
+      check_add_findingf(c, "%s contains \"\\v\" to print operating system version", file);
+  }
+
+  free(line);
+  fclose(stream);
+}
+
 int collector_files_evaluate(struct report* report) {
   struct check* stickybit = check_new("cis", "1.1.17", "Set Sticky Bit on All World-Writable Directories", CHECK_PASSED);
 
   struct check* nouser = check_new("cis", "9.1.11", "Find un-owned files and directories", CHECK_PASSED);
   struct check* nogroup = check_new("cis", "9.1.12", "Find un-grouped files and directories", CHECK_PASSED);
+  struct check* banner = check_new("cis", "8.1", "Set Warning Banner for Standard Login Services", CHECK_PASSED);
+  struct check* banneros = check_new("cis", "8.2", "Remove OS Information from Login Warning Banners", CHECK_PASSED);
 
   report_add_new_check_perm(report, "cis", "9.1.2", "Verify Permissions on /etc/passwd", "/etc/passwd", NULL, NULL, 0644, CHECK_MODE);
   report_add_new_check_perm(report, "cis", "9.1.3", "Verify Permissions on /etc/shadow", "/etc/shadow", NULL, NULL, 0000, CHECK_MODE);
@@ -140,6 +167,17 @@ int collector_files_evaluate(struct report* report) {
   report_add_new_check_perm(report, "cis", "6.1.7", "Set User/Group Owner and Permission on /etc/cron.weekly", "/etc/cron.weekly", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.8", "Set User/Group Owner and Permission on /etc/cron.monthly", "/etc/cron.monthly", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.9", "Set User/Group Owner and Permission on /etc/cron.d", "/etc/cron.d", "root", "root", 0700, CHECK_ALL);
+
+  if(access("/etc/motd", F_OK) != 0)
+    check_add_findingf(banner, "file /etc/motd was not found");
+  if(access("/etc/issue", F_OK) != 0)
+    check_add_findingf(banner, "file /etc/issue was not found");
+  if(access("/etc/issue.net", F_OK) != 0)
+    check_add_findingf(banner, "file /etc/issue.net was not found");
+
+  verify_os_info(banneros, "/etc/issue");
+  verify_os_info(banneros, "/etc/motd");
+  verify_os_info(banneros, "/etc/issue.net");
 
   FILE* f = setmntent("/proc/self/mounts", "r");
   struct mntent *mount;
@@ -173,5 +211,7 @@ int collector_files_evaluate(struct report* report) {
   report_add_check(report, stickybit);
   report_add_check(report, nouser);
   report_add_check(report, nogroup);
+  report_add_check(report, banner);
+  report_add_check(report, banneros);
   return 0;
 }
