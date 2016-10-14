@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <harden/report.h>
 #include <harden/check.h>
@@ -16,6 +17,14 @@
 #include <grp.h>
 
 #include <errno.h>
+
+enum scope {
+  CHECK_EXIST = 0,
+  CHECK_OWNER = 1,
+  CHECK_GROUP = 2,
+  CHECK_MODE  = 4,
+  CHECK_ALL   = 7,
+};
 
 void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogroup, const char* dir_name, dev_t devid) {
   DIR* d = opendir(dir_name);
@@ -70,89 +79,67 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
   closedir(d);
 }
 
-static void verify_owner(struct check* check, const char* path) {
+static void report_add_new_check_perm(struct report* r, const char* collection, const char* id, const char* summary, const char* path, const char* expected_owner, const char* expected_group, mode_t expected_mode, enum scope flags) {
+  struct check* c = check_new(collection, id, summary, CHECK_PASSED);
+  struct stat sb;
   struct passwd* owner;
   struct group* group;
 
-  struct stat sb;
-  lstat(path, &sb);
-
-  owner = getpwuid(sb.st_uid);
-  group = getgrgid(sb.st_gid);
-
-  if(sb.st_uid != 0) {
-    if(owner == NULL)
-      check_add_findingf(check, "%s is owned by unknown user (uid %u) instead of root", path, sb.st_uid);
-    else
-      check_add_findingf(check, "%s is owned by user %s instead of root", path, owner->pw_name);
+  if(stat(path, &sb) >=0) {
+    if(flags & CHECK_MODE) {
+      if((sb.st_mode & 07777) != expected_mode) {
+        check_add_findingf(c, "%s has incorrect permissions. Got: %03o. Expected: %03o", path, sb.st_mode & 07777, expected_mode);
+      }
+    }
+    if(flags & CHECK_OWNER) {
+      if((owner = getpwuid(sb.st_uid)) == NULL) {
+        check_add_findingf(c, "%s is owned by unknown user with uid %u. Expected: %s", path, sb.st_uid, expected_owner);
+      }
+      else if(strcmp(expected_owner, owner->pw_name) != 0) {
+        check_add_findingf(c, "%s is owned by user %s. Expected: %s", path, owner->pw_name, expected_owner);
+      }
+    }
+   if(flags & CHECK_GROUP) {
+      if((group = getgrgid(sb.st_gid)) == NULL) {
+        check_add_findingf(c, "%s is owned by unknown group with gid %u. Expected: %s", path, sb.st_gid, expected_group);
+      }
+      else if(strcmp(expected_group, group->gr_name) != 0) {
+        check_add_findingf(c, "%s is owned by group %s. Expected: %s", path, group->gr_name, expected_group);
+      }
+    }
+  }
+  else if(errno == ENOENT) {
+    check_add_findingf(c, "%s was not found", path);
+  }
+  else {
+    check_add_findingf(c, "error to stat %s: %s", path, strerror(errno));
   }
 
-  if(sb.st_gid != 0) {
-    if(group == NULL)
-      check_add_findingf(check, "%s is owned by unknown group (gid %u) instead of root", path, sb.st_gid);
-    else
-      check_add_findingf(check, "%s is owned by group %s instead of root", path, group->gr_name);
-  }
-}
-
-static void verify_perm(struct check* check, const char* path, mode_t expected_mode) {
-  struct stat sb;
-  lstat(path, &sb);
-
-  if((sb.st_mode & 07777) != expected_mode)
-    check_add_findingf(check, "%s has incorrect permissions. Got: %03o. Expected: %03o", path, sb.st_mode & 07777, expected_mode);
+  report_add_check(r, c);
 }
 
 int collector_files_evaluate(struct report* report) {
   struct check* stickybit = check_new("cis", "1.1.17", "Set Sticky Bit on All World-Writable Directories", CHECK_PASSED);
 
-  struct check* perm_passwd = check_new("cis", "9.1.2", "Verify Permissions on /etc/passwd", CHECK_PASSED);
-  struct check* perm_shadow = check_new("cis", "9.1.3", "Verify Permissions on /etc/shadow", CHECK_PASSED);
-  struct check* perm_gshadow = check_new("cis", "9.1.4", "Verify Permissions on /etc/gshadow", CHECK_PASSED);
-  struct check* perm_group = check_new("cis", "9.1.5", "Verify Permissions on /etc/group", CHECK_PASSED);
-
-  struct check* owner_passwd = check_new("cis", "9.1.6", "Verify User/Group Ownership on /etc/passwd", CHECK_PASSED);
-  struct check* owner_shadow = check_new("cis", "9.1.7", "Verify User/Group Ownership on /etc/shadow", CHECK_PASSED);
-  struct check* owner_gshadow = check_new("cis", "9.1.8", "Verify User/Group Ownership on /etc/gshadow", CHECK_PASSED);
-  struct check* owner_group = check_new("cis", "9.1.9", "Verify User/Group Ownership on /etc/group", CHECK_PASSED);
-
   struct check* nouser = check_new("cis", "9.1.11", "Find un-owned files and directories", CHECK_PASSED);
   struct check* nogroup = check_new("cis", "9.1.12", "Find un-grouped files and directories", CHECK_PASSED);
 
-  struct check* crontab = check_new("cis", "6.1.4", "Set User/Group Owner and Permission on /etc/crontab", CHECK_PASSED);
-  struct check* cronhourly = check_new("cis", "6.1.5", "Set User/Group Owner and Permission on /etc/cron.hourly", CHECK_PASSED);
-  struct check* crondaily = check_new("cis", "6.1.6", "Set User/Group Owner and Permission on /etc/cron.daily", CHECK_PASSED);
-  struct check* cronweekly = check_new("cis", "6.1.7", "Set User/Group Owner and Permission on /etc/cron.weekly", CHECK_PASSED);
-  struct check* cronmonthly = check_new("cis", "6.1.8", "Set User/Group Owner and Permission on /etc/cron.monthly", CHECK_PASSED);
-  struct check* crond = check_new("cis", "6.1.9", "Set User/Group Owner and Permission on /etc/cron.d", CHECK_PASSED);
+  report_add_new_check_perm(report, "cis", "9.1.2", "Verify Permissions on /etc/passwd", "/etc/passwd", NULL, NULL, 0644, CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "9.1.3", "Verify Permissions on /etc/shadow", "/etc/shadow", NULL, NULL, 0000, CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "9.1.4", "Verify Permissions on /etc/gshadow", "/etc/gshadow", NULL, NULL, 0000, CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "9.1.5", "Verify Permissions on /etc/group", "/etc/group", NULL, NULL, 0644, CHECK_MODE);
 
-  verify_owner(owner_passwd, "/etc/passwd");
-  verify_owner(owner_shadow, "/etc/shadow");
-  verify_owner(owner_gshadow, "/etc/gshadow");
-  verify_owner(owner_group, "/etc/group");
+  report_add_new_check_perm(report, "cis", "9.1.6", "Verify User/Group Ownership on /etc/passwd", "/etc/passwd", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "9.1.7", "Verify User/Group Ownership on /etc/shadow", "/etc/shadow", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "9.1.8", "Verify User/Group Ownership on /etc/gshadow", "/etc/gshadow", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "9.1.9", "Verify User/Group Ownership on /etc/group", "/etc/group", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
 
-  verify_owner(crontab, "/etc/crontab");
-  verify_perm(crontab, "/etc/crontab", 0600);
-
-  verify_owner(cronhourly, "/etc/cron.hourly");
-  verify_perm(cronhourly, "/etc/cron.hourly", 0700);
-
-  verify_owner(crondaily, "/etc/cron.daily");
-  verify_perm(crondaily, "/etc/cron.daily", 0700);
-
-  verify_owner(cronweekly, "/etc/cron.weekly");
-  verify_perm(cronweekly, "/etc/cron.weekly", 0700);
-
-  verify_owner(cronmonthly, "/etc/cron.monthly");
-  verify_perm(cronmonthly, "/etc/cron.monthly", 0700);
-
-  verify_owner(crond, "/etc/cron.d");
-  verify_perm(crond, "/etc/cron.d", 0700);
-
-  verify_perm(perm_passwd, "/etc/passwd", 0644);
-  verify_perm(perm_shadow, "/etc/shadow", 0000);
-  verify_perm(perm_gshadow, "/etc/gshadow", 0000);
-  verify_perm(perm_group, "/etc/group", 0644);
+  report_add_new_check_perm(report, "cis", "6.1.4", "Set User/Group Owner and Permission on /etc/crontab", "/etc/crontab", "root", "root", 0600, CHECK_ALL);
+  report_add_new_check_perm(report, "cis", "6.1.5", "Set User/Group Owner and Permission on /etc/cron.hourly", "/etc/cron.hourly", "root", "root", 0700, CHECK_ALL);
+  report_add_new_check_perm(report, "cis", "6.1.6", "Set User/Group Owner and Permission on /etc/cron.daily", "/etc/cron.daily", "root", "root", 0700, CHECK_ALL);
+  report_add_new_check_perm(report, "cis", "6.1.7", "Set User/Group Owner and Permission on /etc/cron.weekly", "/etc/cron.weekly", "root", "root", 0700, CHECK_ALL);
+  report_add_new_check_perm(report, "cis", "6.1.8", "Set User/Group Owner and Permission on /etc/cron.monthly", "/etc/cron.monthly", "root", "root", 0700, CHECK_ALL);
+  report_add_new_check_perm(report, "cis", "6.1.9", "Set User/Group Owner and Permission on /etc/cron.d", "/etc/cron.d", "root", "root", 0700, CHECK_ALL);
 
   FILE* f = setmntent("/proc/self/mounts", "r");
   struct mntent *mount;
@@ -186,20 +173,5 @@ int collector_files_evaluate(struct report* report) {
   report_add_check(report, stickybit);
   report_add_check(report, nouser);
   report_add_check(report, nogroup);
-  report_add_check(report, perm_passwd);
-  report_add_check(report, perm_shadow);
-  report_add_check(report, perm_gshadow);
-  report_add_check(report, perm_group);
-  report_add_check(report, owner_passwd);
-  report_add_check(report, owner_shadow);
-  report_add_check(report, owner_gshadow);
-  report_add_check(report, owner_group);
-
-  report_add_check(report, crontab);
-  report_add_check(report, cronhourly);
-  report_add_check(report, crondaily);
-  report_add_check(report, cronweekly);
-  report_add_check(report, cronmonthly);
-  report_add_check(report, crond);
   return 0;
 }
