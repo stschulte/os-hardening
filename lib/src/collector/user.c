@@ -210,12 +210,10 @@ int collector_user_evaluate(struct report* report) {
   struct passwd* user;
   struct spwd* shadow;
   struct stat sb_homedir;
-  struct stat sb_file;
   struct passwd* owner;
 
   DIR* homedir;
   struct dirent* direntry;
-  char* file;
 
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
   struct check* pw_min = check_new("cis", "7.1.2", "Set Password Change Minimum Number of Day", CHECK_PASSED);
