@@ -206,11 +206,38 @@ void validate_homefile(struct check* check, struct passwd* user, const char* fil
   free(path);
 }
 
+int parse_default_useradd(int* inactive, int* expire) {
+  FILE* stream;
+  char *line = NULL;
+  size_t len = 0;
+  ssize_t read;
+
+  stream = fopen("/etc/default/useradd", "r");
+  if(stream == NULL)
+    return -1;
+
+  while((read = getline(&line, &len, stream)) != -1) {
+    if(strncmp(line, "EXPIRE=", 7) == 0) {
+      if(expire != NULL)
+        *expire = atoi(line+7);
+    }
+    else if(strncmp(line, "INACTIVE=", 9) == 0) {
+      if(inactive != NULL)
+        *inactive = atoi(line+9);
+    }
+  }
+
+  free(line);
+  fclose(stream);
+  return 0;
+}
+
 int collector_user_evaluate(struct report* report) {
   struct passwd* user;
   struct spwd* shadow;
   struct stat sb_homedir;
   struct passwd* owner;
+
 
   DIR* homedir;
   struct dirent* direntry;
@@ -236,8 +263,20 @@ int collector_user_evaluate(struct report* report) {
   struct check* duplicate_gid = check_new("cis", "9.2.15", "Check for Duplicate GIDs", CHECK_PASSED);
   struct check* duplicate_grname = check_new("cis", "9.2.17", "Check for Duplicate Group Names", CHECK_PASSED);
 
+  struct check* inactive = check_new("cis", "7.5", "Lock Inactive User Accounts", CHECK_PASSED);
+
   check_user_duplicates(duplicate_uid, duplicate_pwname);
   check_group_duplicates(duplicate_gid, duplicate_grname);
+
+  int default_inactive = -1;
+  if(parse_default_useradd(&default_inactive, NULL) == 0) {
+    if(default_inactive < 35) {
+      check_add_findingf(inactive, "the default inactive value is set to %d instead of 35 or more", default_inactive);
+    }
+  }
+  else {
+    check_add_findingf(inactive, "unable to get the inactive value from /etc/default/useradd");
+  }
 
   setpwent();
   if(errno == EACCES) {
@@ -357,5 +396,6 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, duplicate_gid);
   report_add_check(report, duplicate_pwname);
   report_add_check(report, duplicate_grname);
+  report_add_check(report, inactive);
   return 0;
 }
