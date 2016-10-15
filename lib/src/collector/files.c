@@ -194,7 +194,9 @@ int collector_files_evaluate(struct report* report) {
             || strcmp(mount->mnt_type, "sysfs") == 0
             || strcmp(mount->mnt_type, "devfs") == 0
             || strcmp(mount->mnt_type, "kernfs") == 0
-            || strcmp(mount->mnt_type, "ignore") == 0)
+            || strcmp(mount->mnt_type, "ignore") == 0
+            || strcmp(mount->mnt_type, "rootfs") == 0
+            || strcmp(mount->mnt_type, "cgroup") == 0)
       continue;
 
     if((strchr(mount->mnt_fsname, ':') != NULL) || (strncmp(mount->mnt_fsname, "//", 2) == 0 && strcmp(mount->mnt_type, "cifs") == 0))
