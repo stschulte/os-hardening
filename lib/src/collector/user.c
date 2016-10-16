@@ -278,6 +278,7 @@ int collector_user_evaluate(struct report* report) {
 
   struct check* disablesysaccount = check_new("cis", "7.2", "Disable System Accounts", CHECK_PASSED);
   struct check* root_group = check_new("cis", "7.3", "Set Default Group for root Account", CHECK_PASSED);
+  struct check* root = check_new("cis", "9.2.5", "Verify No UID 0 Accounts Exist Other Than root", CHECK_PASSED);
 
   struct check* home_perm = check_new("cis", "9.2.7", "Check Permissions on User Home Directories", CHECK_PASSED);
   struct check* home_owner = check_new("cis", "9.2.13", "Check User Home Directory Ownership", CHECK_PASSED);
@@ -296,6 +297,7 @@ int collector_user_evaluate(struct report* report) {
   struct check* duplicate_grname = check_new("cis", "9.2.17", "Check for Duplicate Group Names", CHECK_PASSED);
 
   struct check* inactive = check_new("cis", "7.5", "Lock Inactive User Accounts", CHECK_PASSED);
+
 
   check_user_duplicates(duplicate_uid, duplicate_pwname);
   check_group_duplicates(duplicate_gid, duplicate_grname);
@@ -331,6 +333,9 @@ int collector_user_evaluate(struct report* report) {
 
   while((user = getpwent()) != NULL) {
     if(user->pw_uid == 0) {
+      if(strcmp(user->pw_name, "root") != 0) {
+        check_add_findingf(root, "found another user with uid 0: %s", user->pw_name);
+      }
       if(user->pw_gid != 0) {
         check_add_findingf(root_group, "root user has gid %d instead of 0", user->pw_gid);
       }
@@ -439,6 +444,7 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, gr_legacy);
   report_add_check(report, sh_legacy);
   report_add_check(report, disablesysaccount);
+  report_add_check(report, root);
   report_add_check(report, root_group);
   report_add_check(report, home_perm);
   report_add_check(report, home_owner);
