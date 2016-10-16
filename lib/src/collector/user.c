@@ -270,6 +270,7 @@ int collector_user_evaluate(struct report* report) {
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
   struct check* pw_min = check_new("cis", "7.1.2", "Set Password Change Minimum Number of Day", CHECK_PASSED);
   struct check* pw_warn = check_new("cis", "7.1.3", "Set Password Expiring Warning Days", CHECK_PASSED);
+  struct check* pw_empty = check_new("cis", "9.2.1", "Ensure Password Fields are Not Empty", CHECK_PASSED);
 
   struct check* pw_legacy = check_new("cis", "9.2.2", "Verify No Legacy \"+\" Entries Exist in /etc/passwd File", CHECK_PASSED);
   struct check* gr_legacy = check_new("cis", "9.2.3", "Verify No Legacy \"+\" Entries Exist in /etc/shadow File", CHECK_PASSED);
@@ -350,6 +351,10 @@ int collector_user_evaluate(struct report* report) {
       continue;
 
     if((shadow = getspnam(user->pw_name)) != NULL) {
+
+      if(strcmp(shadow->sp_pwdp, "") == 0) {
+        check_add_findingf(pw_empty, "user %s has an empty password", user->pw_name);
+       }
       /* ignore users that will not be able to login with a password */
       if(shadow->sp_pwdp[0] != '!' && shadow->sp_pwdp[0] != '*') {
         if(shadow->sp_max == -1) {
@@ -429,6 +434,7 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, pw_max);
   report_add_check(report, pw_min);
   report_add_check(report, pw_warn);
+  report_add_check(report, pw_empty);
   report_add_check(report, pw_legacy);
   report_add_check(report, gr_legacy);
   report_add_check(report, sh_legacy);
