@@ -245,6 +245,7 @@ int collector_user_evaluate(struct report* report) {
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
   struct check* pw_min = check_new("cis", "7.1.2", "Set Password Change Minimum Number of Day", CHECK_PASSED);
   struct check* pw_warn = check_new("cis", "7.1.3", "Set Password Expiring Warning Days", CHECK_PASSED);
+  struct check* disablesysaccount = check_new("cis", "7.2", "Disable System Accounts", CHECK_PASSED);
   struct check* root_group = check_new("cis", "7.3", "Set Default Group for root Account", CHECK_PASSED);
 
   struct check* home_perm = check_new("cis", "9.2.7", "Check Permissions on User Home Directories", CHECK_PASSED);
@@ -299,6 +300,16 @@ int collector_user_evaluate(struct report* report) {
         check_add_findingf(root_group, "root user has gid %d instead of 0", user->pw_gid);
       }
       continue;
+    }
+
+    if((user->pw_uid < 500) &&
+          (strcmp(user->pw_name,"root") != 0) &&
+          (strcmp(user->pw_name, "sync") != 0) &&
+          (strcmp(user->pw_name, "shutdown") != 0) &&
+          (strcmp(user->pw_name, "halt") != 0) &&
+          (strcmp(user->pw_shell, "/sbin/nologin") != 0) &&
+          (strcmp(user->pw_shell, "/bin/false") != 0)) {
+      check_add_findingf(disablesysaccount, "system user %s with uid %u has shell %s. Expected: /sbin/nologin or /bin/false", user->pw_name, user->pw_uid, user->pw_shell);
     }
 
     if(!is_dialog_user(user))
@@ -384,6 +395,7 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, pw_max);
   report_add_check(report, pw_min);
   report_add_check(report, pw_warn);
+  report_add_check(report, disablesysaccount);
   report_add_check(report, root_group);
   report_add_check(report, home_perm);
   report_add_check(report, home_owner);
