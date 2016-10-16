@@ -168,8 +168,8 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
   report_add_new_check_perm(report, "cis", "6.1.8", "Set User/Group Owner and Permission on /etc/cron.monthly", "/etc/cron.monthly", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.9", "Set User/Group Owner and Permission on /etc/cron.d", "/etc/cron.d", "root", "root", 0700, CHECK_ALL);
 
-  report_add_new_check_perm(report, "cis", "1.5.1", "Set User/Group Owner on /etc/grub.conf", "/etc/group.conf", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
-  report_add_new_check_perm(report, "cis", "1.5.2", "Set Permissions on /etc/grub.conf", "/etc/group.conf", "root", "root", 0600, CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "1.5.1", "Set User/Group Owner on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "1.5.2", "Set Permissions on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0600, CHECK_OWNER | CHECK_GROUP);
 
   if(access("/etc/motd", F_OK) != 0)
     check_add_findingf(banner, "file /etc/motd was not found");
