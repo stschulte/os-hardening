@@ -8,7 +8,8 @@
 
 enum check_result {
   CHECK_PASSED = 0,
-  CHECK_FAILED = 1
+  CHECK_FAILED = 1,
+  CHECK_SKIPPED = 2
 };
 
 struct finding {

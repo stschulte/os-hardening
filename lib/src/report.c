@@ -86,16 +86,22 @@ void report_print_summary(struct report *r) {
     check = list->check;
     checks_count++;
     findings = check->findings;
-    if(check->result == CHECK_PASSED) {
+    switch(check->result) {
+    case CHECK_PASSED:
       checks_passed++;
       printf("[\033[32;1mPASSED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
-    }
-    else {
+      break;
+    case CHECK_SKIPPED:
+      checks_passed++;
+      printf("[\033[33;1m SKIP \033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
+      break;
+    default:
       printf("[\033[31;1mFAILED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
       while(findings != NULL) {
         printf("     \033[31m[●]\033[0m %s\n", findings->finding);
         findings = findings->next;
       }
+      break;
     }
     list = list->next;
   }

@@ -143,7 +143,7 @@ void verify_os_info(struct check* c, const char* file) {
   fclose(stream);
 }
 
-int collector_files_evaluate(struct report* report) {
+int collector_files_evaluate(struct report* report, enum collector_flags flags) {
   struct check* stickybit = check_new("cis", "1.1.17", "Set Sticky Bit on All World-Writable Directories", CHECK_PASSED);
 
   struct check* nouser = check_new("cis", "9.1.11", "Find un-owned files and directories", CHECK_PASSED);
@@ -179,36 +179,43 @@ int collector_files_evaluate(struct report* report) {
   verify_os_info(banneros, "/etc/motd");
   verify_os_info(banneros, "/etc/issue.net");
 
-  FILE* f = setmntent("/proc/self/mounts", "r");
   struct mntent *mount;
 
-  while((mount = getmntent(f)) != NULL) {
-    if(strcmp(mount->mnt_type, "autofs") == 0
-            || strcmp(mount->mnt_type, "proc") == 0
-            || strcmp(mount->mnt_type, "subfs") == 0
-            || strcmp(mount->mnt_type, "debugfs") == 0
-            || strcmp(mount->mnt_type, "devpts") == 0
-            || strcmp(mount->mnt_type, "fusectl") == 0
-            || strcmp(mount->mnt_type, "mqueue") == 0
-            || strcmp(mount->mnt_type, "rpc_pipefs") == 0
-            || strcmp(mount->mnt_type, "sysfs") == 0
-            || strcmp(mount->mnt_type, "devfs") == 0
-            || strcmp(mount->mnt_type, "kernfs") == 0
-            || strcmp(mount->mnt_type, "ignore") == 0
-            || strcmp(mount->mnt_type, "rootfs") == 0
-            || strcmp(mount->mnt_type, "cgroup") == 0)
-      continue;
-
-    if((strchr(mount->mnt_fsname, ':') != NULL) || (strncmp(mount->mnt_fsname, "//", 2) == 0 && strcmp(mount->mnt_type, "cifs") == 0))
-      continue;
-
-    printf("collector/files: Checking files on %s\n", mount->mnt_dir);
-
-    struct stat sb;
-    lstat(mount->mnt_dir, &sb);
-    traverse_dir(stickybit, nouser, nogroup, mount->mnt_dir, sb.st_dev);
+  if(flags & COLLECTOR_FAST) {
+    stickybit->result = CHECK_SKIPPED;
+    nouser->result = CHECK_SKIPPED;
+    nogroup->result = CHECK_SKIPPED;
   }
-  endmntent(f);
+  else {
+    FILE* f = setmntent("/proc/self/mounts", "r");
+    while((mount = getmntent(f)) != NULL) {
+      if(strcmp(mount->mnt_type, "autofs") == 0
+              || strcmp(mount->mnt_type, "proc") == 0
+              || strcmp(mount->mnt_type, "subfs") == 0
+              || strcmp(mount->mnt_type, "debugfs") == 0
+              || strcmp(mount->mnt_type, "devpts") == 0
+              || strcmp(mount->mnt_type, "fusectl") == 0
+              || strcmp(mount->mnt_type, "mqueue") == 0
+              || strcmp(mount->mnt_type, "rpc_pipefs") == 0
+              || strcmp(mount->mnt_type, "sysfs") == 0
+              || strcmp(mount->mnt_type, "devfs") == 0
+              || strcmp(mount->mnt_type, "kernfs") == 0
+              || strcmp(mount->mnt_type, "ignore") == 0
+              || strcmp(mount->mnt_type, "rootfs") == 0
+              || strcmp(mount->mnt_type, "cgroup") == 0)
+        continue;
+
+      if((strchr(mount->mnt_fsname, ':') != NULL) || (strncmp(mount->mnt_fsname, "//", 2) == 0 && strcmp(mount->mnt_type, "cifs") == 0))
+        continue;
+
+      printf("collector/files: Checking files on %s\n", mount->mnt_dir);
+
+      struct stat sb;
+      lstat(mount->mnt_dir, &sb);
+      traverse_dir(stickybit, nouser, nogroup, mount->mnt_dir, sb.st_dev);
+    }
+    endmntent(f);
+  }
 
   report_add_check(report, stickybit);
   report_add_check(report, nouser);

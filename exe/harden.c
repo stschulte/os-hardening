@@ -3,6 +3,7 @@
 #include <harden/util.h>
 #include <harden/check.h>
 #include <harden/report.h>
+#include <harden/collector.h>
 
 #include <harden/collector/kernel.h>
 #include <harden/collector/files.h>
@@ -24,8 +25,15 @@
 #include <stdio.h>
 
 int main(int argc, char** argv) {
-  struct report *r = report_new("foobar");
 
+  enum collector_flags cflags = COLLECTOR_NONE;
+
+  for(int i=1; i<argc; i++) {
+    char* option = argv[i];
+    if(strcmp(option, "--fast") == 0)
+      cflags |= COLLECTOR_FAST;
+  }
+  struct report *r = report_new("foobar");
 
   util_init();
   
@@ -34,7 +42,7 @@ int main(int argc, char** argv) {
   printf("Running collector: kernel\n");
   collector_kernel_evaluate(r);
   printf("Running collector: files\n");
-  collector_files_evaluate(r);
+  collector_files_evaluate(r, cflags);
   printf("Running collector: user\n");
   collector_user_evaluate(r);
 #ifdef HAVE_KMOD
