@@ -72,7 +72,7 @@ void sort_list(struct check_list* head) {
   }
 }
 
-void report_print_summary(struct report *r) {
+void report_print_summary(struct report *r, enum report_flags flags) {
   int checks_count = 0;
   int checks_passed = 0;
 
@@ -89,11 +89,13 @@ void report_print_summary(struct report *r) {
     switch(check->result) {
     case CHECK_PASSED:
       checks_passed++;
-      printf("[\033[32;1mPASSED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
+      if((flags & REPORT_FAILED_ONLY) == 0)
+        printf("[\033[32;1mPASSED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
       break;
     case CHECK_SKIPPED:
       checks_passed++;
-      printf("[\033[33;1m SKIP \033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
+      if((flags & REPORT_FAILED_ONLY) == 0)
+        printf("[\033[33;1m SKIP \033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
       break;
     default:
       printf("[\033[31;1mFAILED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);

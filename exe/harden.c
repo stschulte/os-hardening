@@ -27,11 +27,14 @@
 int main(int argc, char** argv) {
 
   enum collector_flags cflags = COLLECTOR_NONE;
+  enum report_flags rflags = REPORT_NONE;
 
   for(int i=1; i<argc; i++) {
     char* option = argv[i];
     if(strcmp(option, "--fast") == 0)
       cflags |= COLLECTOR_FAST;
+    if(strcmp(option, "--failed-only") == 0)
+      rflags |= REPORT_FAILED_ONLY;
   }
   struct report *r = report_new("foobar");
 
@@ -65,7 +68,7 @@ int main(int argc, char** argv) {
   util_clean();
 
   printf("\n\nSUMMARY:\n");
-  report_print_summary(r);
+  report_print_summary(r, rflags);
 
   report_free(r);
 }
