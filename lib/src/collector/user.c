@@ -206,6 +206,31 @@ void validate_homefile(struct check* check, struct passwd* user, const char* fil
   free(path);
 }
 
+void check_legacy_entry_in_file(struct check* c, const char* filename) {
+  FILE* stream;
+  char* line = NULL;
+  size_t len = 0;
+  ssize_t read;
+  int linenr = 0;
+
+  stream = fopen(filename, "r");
+  if(stream == NULL) {
+    check_add_findingf(c, "unable to open file %s: %s", filename, strerror(errno));
+    return;
+  }
+
+  while((read = getline(&line, &len, stream)) != -1) {
+    linenr++;
+    if(strncmp(line, "+:", 2) == 0){
+      line[strcspn(line,"\n")] = '\0';
+      check_add_findingf(c, "the /etc/passwd contains a legacy entry in line %d: \"%s\"", linenr, line);
+    }
+  }
+
+  free(line);
+  fclose(stream);
+}
+
 int parse_default_useradd(int* inactive, int* expire) {
   FILE* stream;
   char *line = NULL;
@@ -245,6 +270,11 @@ int collector_user_evaluate(struct report* report) {
   struct check* pw_max = check_new("cis", "7.1.1", "Set Password Expiration Days", CHECK_PASSED);
   struct check* pw_min = check_new("cis", "7.1.2", "Set Password Change Minimum Number of Day", CHECK_PASSED);
   struct check* pw_warn = check_new("cis", "7.1.3", "Set Password Expiring Warning Days", CHECK_PASSED);
+
+  struct check* pw_legacy = check_new("cis", "9.2.2", "Verify No Legacy \"+\" Entries Exist in /etc/passwd File", CHECK_PASSED);
+  struct check* gr_legacy = check_new("cis", "9.2.3", "Verify No Legacy \"+\" Entries Exist in /etc/shadow File", CHECK_PASSED);
+  struct check* sh_legacy = check_new("cis", "9.2.4", "Verify No Legacy \"+\" Entries Exist in /etc/group File", CHECK_PASSED);
+
   struct check* disablesysaccount = check_new("cis", "7.2", "Disable System Accounts", CHECK_PASSED);
   struct check* root_group = check_new("cis", "7.3", "Set Default Group for root Account", CHECK_PASSED);
 
@@ -278,6 +308,10 @@ int collector_user_evaluate(struct report* report) {
   else {
     check_add_findingf(inactive, "unable to get the inactive value from /etc/default/useradd");
   }
+
+  check_legacy_entry_in_file(pw_legacy, "/etc/passwd");
+  check_legacy_entry_in_file(gr_legacy, "/etc/group");
+  check_legacy_entry_in_file(sh_legacy, "/etc/shadow");
 
   setpwent();
   if(errno == EACCES) {
@@ -395,6 +429,9 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, pw_max);
   report_add_check(report, pw_min);
   report_add_check(report, pw_warn);
+  report_add_check(report, pw_legacy);
+  report_add_check(report, gr_legacy);
+  report_add_check(report, sh_legacy);
   report_add_check(report, disablesysaccount);
   report_add_check(report, root_group);
   report_add_check(report, home_perm);
