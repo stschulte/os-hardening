@@ -246,7 +246,9 @@ void report_add_new_check_perm(struct report* r, const char* collection, const c
     }
   }
   else if(errno == ENOENT) {
-    check_add_findingf(c, "%s was not found", path);
+    if(flags & CHECK_EXIST) {
+      check_add_findingf(c, "%s was not found", path);
+    }
   }
   else {
     check_add_findingf(c, "error to stat %s: %s", path, strerror(errno));

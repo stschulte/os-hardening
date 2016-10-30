@@ -105,15 +105,15 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
   struct check* banner = check_new("cis", "8.1", "Set Warning Banner for Standard Login Services", CHECK_PASSED);
   struct check* banneros = check_new("cis", "8.2", "Remove OS Information from Login Warning Banners", CHECK_PASSED);
 
-  report_add_new_check_perm(report, "cis", "9.1.2", "Verify Permissions on /etc/passwd", "/etc/passwd", NULL, NULL, 0644, CHECK_MODE);
-  report_add_new_check_perm(report, "cis", "9.1.3", "Verify Permissions on /etc/shadow", "/etc/shadow", NULL, NULL, 0000, CHECK_MODE);
-  report_add_new_check_perm(report, "cis", "9.1.4", "Verify Permissions on /etc/gshadow", "/etc/gshadow", NULL, NULL, 0000, CHECK_MODE);
-  report_add_new_check_perm(report, "cis", "9.1.5", "Verify Permissions on /etc/group", "/etc/group", NULL, NULL, 0644, CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "9.1.2", "Verify Permissions on /etc/passwd", "/etc/passwd", NULL, NULL, 0644, CHECK_EXIST | CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "9.1.3", "Verify Permissions on /etc/shadow", "/etc/shadow", NULL, NULL, 0000, CHECK_EXIST | CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "9.1.4", "Verify Permissions on /etc/gshadow", "/etc/gshadow", NULL, NULL, 0000, CHECK_EXIST | CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "9.1.5", "Verify Permissions on /etc/group", "/etc/group", NULL, NULL, 0644, CHECK_EXIST | CHECK_MODE);
 
-  report_add_new_check_perm(report, "cis", "9.1.6", "Verify User/Group Ownership on /etc/passwd", "/etc/passwd", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
-  report_add_new_check_perm(report, "cis", "9.1.7", "Verify User/Group Ownership on /etc/shadow", "/etc/shadow", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
-  report_add_new_check_perm(report, "cis", "9.1.8", "Verify User/Group Ownership on /etc/gshadow", "/etc/gshadow", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
-  report_add_new_check_perm(report, "cis", "9.1.9", "Verify User/Group Ownership on /etc/group", "/etc/group", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "9.1.6", "Verify User/Group Ownership on /etc/passwd", "/etc/passwd", "root", "root", 0, CHECK_EXIST | CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "9.1.7", "Verify User/Group Ownership on /etc/shadow", "/etc/shadow", "root", "root", 0, CHECK_EXIST | CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "9.1.8", "Verify User/Group Ownership on /etc/gshadow", "/etc/gshadow", "root", "root", 0, CHECK_EXIST | CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "9.1.9", "Verify User/Group Ownership on /etc/group", "/etc/group", "root", "root", 0, CHECK_EXIST | CHECK_OWNER | CHECK_GROUP);
 
   report_add_new_check_perm(report, "cis", "6.1.4", "Set User/Group Owner and Permission on /etc/crontab", "/etc/crontab", "root", "root", 0600, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.5", "Set User/Group Owner and Permission on /etc/cron.hourly", "/etc/cron.hourly", "root", "root", 0700, CHECK_ALL);

@@ -7,11 +7,11 @@
 #include <harden/report.h>
 
 enum scope {
-  CHECK_EXIST = 0,
-  CHECK_OWNER = 1,
-  CHECK_GROUP = 2,
-  CHECK_MODE  = 4,
-  CHECK_ALL   = 7
+  CHECK_EXIST = 1,
+  CHECK_OWNER = 2,
+  CHECK_GROUP = 4,
+  CHECK_MODE  = 8,
+  CHECK_ALL   = 15,
 };
 
 void util_init(void);

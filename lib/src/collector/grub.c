@@ -21,8 +21,8 @@ int collector_grub_evaluate(struct report* report) {
   struct check* grubselinux = check_new("cis", "1.4.1", "Enable SELinux in /etc/grub.conf", CHECK_PASSED);
   struct check* grubpw = check_new("cis", "1.5.3", "Set Boot Loader Password", CHECK_PASSED);
 
-  report_add_new_check_perm(report, "cis", "1.5.1", "Set User/Group Owner on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
-  report_add_new_check_perm(report, "cis", "1.5.2", "Set Permissions on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0600, CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "1.5.1", "Set User/Group Owner on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0, CHECK_EXIST | CHECK_OWNER | CHECK_GROUP);
+  report_add_new_check_perm(report, "cis", "1.5.2", "Set Permissions on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0600, CHECK_EXIST | CHECK_MODE);
 
 
   if((stream = fopen(GRUB_CONF, "r")) == NULL) {
