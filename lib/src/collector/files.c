@@ -96,28 +96,6 @@ void verify_os_info(struct check* c, const char* file) {
   fclose(stream);
 }
 
-int boot_password_set(const char* file) {
-  FILE* stream;
-  char* line = NULL;
-  size_t len = 0;
-  ssize_t read;
-  int found = 0;
-
-  stream = fopen(file, "r");
-  if(stream == NULL)
-    return -1;
-
-  while((read = getline(&line, &len, stream)) != -1) {
-    if(strncmp(line, "password", 8) == 0) {
-      found = 1;
-      break;
-    }
-  }
-
-  free(line);
-  fclose(stream);
-  return found;
-}
 
 int collector_files_evaluate(struct report* report, enum collector_flags flags) {
   struct check* stickybit = check_new("cis", "1.1.17", "Set Sticky Bit on All World-Writable Directories", CHECK_PASSED);
@@ -126,7 +104,6 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
   struct check* nogroup = check_new("cis", "9.1.12", "Find un-grouped files and directories", CHECK_PASSED);
   struct check* banner = check_new("cis", "8.1", "Set Warning Banner for Standard Login Services", CHECK_PASSED);
   struct check* banneros = check_new("cis", "8.2", "Remove OS Information from Login Warning Banners", CHECK_PASSED);
-  struct check* grubpw = check_new("cis", "1.5.3", "Set Boot Loader Password", CHECK_PASSED);
 
   report_add_new_check_perm(report, "cis", "9.1.2", "Verify Permissions on /etc/passwd", "/etc/passwd", NULL, NULL, 0644, CHECK_MODE);
   report_add_new_check_perm(report, "cis", "9.1.3", "Verify Permissions on /etc/shadow", "/etc/shadow", NULL, NULL, 0000, CHECK_MODE);
@@ -145,8 +122,6 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
   report_add_new_check_perm(report, "cis", "6.1.8", "Set User/Group Owner and Permission on /etc/cron.monthly", "/etc/cron.monthly", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.9", "Set User/Group Owner and Permission on /etc/cron.d", "/etc/cron.d", "root", "root", 0700, CHECK_ALL);
 
-  report_add_new_check_perm(report, "cis", "1.5.1", "Set User/Group Owner on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0, CHECK_OWNER | CHECK_GROUP);
-  report_add_new_check_perm(report, "cis", "1.5.2", "Set Permissions on /etc/grub.conf", "/etc/grub.conf", "root", "root", 0600, CHECK_OWNER | CHECK_GROUP);
 
   if(access("/etc/motd", F_OK) != 0)
     check_add_findingf(banner, "file /etc/motd was not found");
@@ -158,17 +133,6 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
   verify_os_info(banneros, "/etc/issue");
   verify_os_info(banneros, "/etc/motd");
   verify_os_info(banneros, "/etc/issue.net");
-
-  switch(boot_password_set("/etc/grub.conf")) {
-    case 0:
-      break;
-    case 1:
-      check_add_findingf(grubpw, "no password set in /etc/grub.conf");
-      break;
-    default:
-      check_add_findingf(grubpw, "unable to open /etc/grub.conf");
-      break;
-  }
 
   struct mntent *mount;
 
@@ -213,6 +177,5 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
   report_add_check(report, nogroup);
   report_add_check(report, banner);
   report_add_check(report, banneros);
-  report_add_check(report, grubpw);
   return 0;
 }

@@ -11,9 +11,8 @@ enum scope {
   CHECK_OWNER = 1,
   CHECK_GROUP = 2,
   CHECK_MODE  = 4,
-  CHECK_ALL   = 7,
+  CHECK_ALL   = 7
 };
-
 
 void util_init(void);
 void util_clean(void);

@@ -20,6 +20,7 @@
 #include <harden/collector/mount.h>
 #include <harden/collector/environ.h>
 #include <harden/collector/services.h>
+#include <harden/collector/grub.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -47,6 +48,8 @@ int main(int argc, char** argv) {
   collector_files_evaluate(r, cflags);
   printf("Running collector: user\n");
   collector_user_evaluate(r);
+  printf("Running collector: grub\n");
+  collector_grub_evaluate(r);
 #ifdef HAVE_KMOD
   printf("Running collector: module\n");
   collector_module_evaluate(r);
