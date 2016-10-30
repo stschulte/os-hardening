@@ -8,7 +8,6 @@
 #include <libkmod.h>
 
 static void check_module(struct check* check, const char* modname, struct kmod_ctx* ctx) {
-  check->result = CHECK_PASSED;
   struct kmod_module *mod;
 
   kmod_module_new_from_name(ctx, modname, &mod);
@@ -39,35 +38,26 @@ static void check_module(struct check* check, const char* modname, struct kmod_c
   kmod_module_unref(mod);
 }
 
+void report_add_new_check_module_disabled(struct report* r, struct kmod_ctx* ctx, const char* collection, const char* id, const char* summary, const char* module) {
+  struct check* c = check_new(collection, id, summary, CHECK_PASSED);
+
+  check_module(c, module, ctx);
+
+  report_add_check(r, c);
+}
+
   
 int collector_module_evaluate(struct report* report) {
-  struct check* cramfs = check_new("cis", "1.1.18", "Disable Mounting of cramfs Filesystems", CHECK_PASSED);
-  struct check* freevxfs = check_new("cis", "1.1.19", "Disable Mounting of freevxfs Filesystems", CHECK_PASSED);
-  struct check* jffs2 = check_new("cis", "1.1.20", "Disable Mounting of jffs2 Filesystems", CHECK_PASSED);
-  struct check* hfs = check_new("cis", "1.1.21", "Disable Mounting of hfs Filesystems", CHECK_PASSED);
-  struct check* hfsplus = check_new("cis", "1.1.22", "Disable Mounting of hfsplus Filesystems", CHECK_PASSED);
-  struct check* squashfs = check_new("cis", "1.1.23", "Disable Mounting of squashfs Filesystems", CHECK_PASSED);
-  struct check* udf = check_new("cis", "1.1.24", "Disable Mounting of udf Filesystems", CHECK_PASSED);
-
   struct kmod_ctx* ctx = kmod_new(NULL, NULL);
 
-  check_module(cramfs, "cramfs", ctx);
-  check_module(freevxfs, "freevxfs", ctx);
-  check_module(jffs2, "jffs2", ctx);
-  check_module(hfs, "hfs", ctx);
-  check_module(hfsplus, "hfsplus", ctx);
-  check_module(squashfs, "squashfs", ctx);
-  check_module(udf, "udf", ctx);
+  report_add_new_check_module_disabled(report, ctx, "cis", "1.1.18", "Disable Mounting of cramfs Filesystems", "cramfs");
+  report_add_new_check_module_disabled(report, ctx, "cis", "1.1.19", "Disable Mounting of freevxfs Filesystems", "freevxfs");
+  report_add_new_check_module_disabled(report, ctx, "cis", "1.1.20", "Disable Mounting of jffs2 Filesystems", "jffs2");
+  report_add_new_check_module_disabled(report, ctx, "cis", "1.1.21", "Disable Mounting of hfs Filesystems", "hfs");
+  report_add_new_check_module_disabled(report, ctx, "cis", "1.1.22", "Disable Mounting of hfsplus Filesystems", "hfsplus");
+  report_add_new_check_module_disabled(report, ctx, "cis", "1.1.23", "Disable Mounting of squashfs Filesystems", "squashfs");
+  report_add_new_check_module_disabled(report, ctx, "cis", "1.1.24", "Disable Mounting of udf Filesystems", "udf");
 
   kmod_unref(ctx);
-
-  report_add_check(report, cramfs);
-  report_add_check(report, freevxfs);
-  report_add_check(report, jffs2);
-  report_add_check(report, hfs);
-  report_add_check(report, hfsplus);
-  report_add_check(report, squashfs);
-  report_add_check(report, udf);
-
   return 0;
 }
