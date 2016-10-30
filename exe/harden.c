@@ -38,9 +38,8 @@ int main(int argc, char** argv) {
   }
   struct report *r = report_new("foobar");
 
+  printf("Initialize utility functions\n");
   util_init();
-  
-  printf("Collection OS information ...\n");
 
   printf("Running collector: kernel\n");
   collector_kernel_evaluate(r);

@@ -20,148 +20,121 @@
 
 #include <dirent.h>
 
-#define USER_MALLOC_CHUNK 100
-#define GROUP_MALLOC_CHUNK 100
 
-int compare_users_by_uid(const void* a, const void *b) {
-  struct passwd* user_a = *( (struct passwd**)a );
-  struct passwd* user_b = *( (struct passwd**)b );
-  if(user_a->pw_uid == user_b->pw_uid)
-    return 0;
-  else if(user_a->pw_uid < user_b->pw_uid)
-    return -1;
-  else
-    return 1;
+void check_user_duplicates(struct check* duplicate_uid, struct check* duplicate_name) {
+  struct passwd** available_users_by_uid;
+  struct passwd** available_users_by_name;
+
+  int idx_first = 0;
+  int idx_last = 0;
+  uid_t current_uid;
+  char* current_name;
+
+  int count = get_cached_users(&available_users_by_name, &available_users_by_uid);
+
+  current_uid = available_users_by_uid[0]->pw_uid;
+  idx_first = 0;
+  idx_last = 0;
+
+  /* check duplicate uids */
+  for(int i=1; i < count; i++) {
+    struct passwd* user = available_users_by_uid[i];
+
+    if(user->pw_uid == current_uid)
+      idx_last = i;
+
+    if(user->pw_uid != current_uid || (i == count-1)) {
+      if((idx_last - idx_first) > 0) {
+        for(int j = idx_first; j <= idx_last; j++) {
+          check_add_findingf(duplicate_uid, "found %d users with uid %u: %s", idx_last - idx_first + 1, current_uid, available_users_by_uid[j]->pw_name);
+        }
+      }
+      current_uid = user->pw_uid;
+      idx_first = i;
+      idx_last = i;
+    }
+  }
+
+  current_name = available_users_by_name[0]->pw_name;
+  idx_first = 0;
+  idx_last = 0;
+
+  /* check duplicate names */
+  for(int i=1; i < count; i++) {
+    struct passwd* user = available_users_by_name[i];
+
+    if(strcmp(user->pw_name, current_name) == 0)
+      idx_last = i;
+
+    if(strcmp(user->pw_name, current_name) != 0 || (i == count-1)) {
+      if((idx_last - idx_first) > 0) {
+        for(int j = idx_first; j <= idx_last; j++) {
+          check_add_findingf(duplicate_name, "user %s has %u uids: %u", current_name, idx_last - idx_first + 1, available_users_by_name[j]->pw_uid);
+        }
+      }
+      current_name = user->pw_name;
+      idx_first = i;
+      idx_last = i;
+    }
+  }
 }
 
-int compare_users_by_name(const void* a, const void *b) {
-  struct passwd* user_a = *( (struct passwd**)a );
-  struct passwd* user_b = *( (struct passwd**)b );
-  return strcmp(user_a->pw_name, user_b->pw_name);
-}
+void check_group_duplicates(struct check* duplicate_gid, struct check* duplicate_name) {
+  struct group** available_groups_by_gid;
+  struct group** available_groups_by_name;
 
-int compare_groups_by_name(const void* a, const void* b) {
-  struct group* group_a = *( (struct group**)a );
-  struct group* group_b = *( (struct group**)b );
-  return strcmp(group_a->gr_name, group_b->gr_name);
-}
+  int idx_first = 0;
+  int idx_last = 0;
+  gid_t current_gid;
+  char* current_name;
 
-int compare_groups_by_gid(const void* a, const void* b) {
-  struct group* group_a = *( (struct group**)a );
-  struct group* group_b = *( (struct group**)b );
-  if(group_a->gr_gid == group_b->gr_gid)
-    return 0;
-  else if(group_a->gr_gid < group_b->gr_gid)
-    return -1;
-  else
-    return 1;
-}
+  int count = get_cached_groups(&available_groups_by_name, &available_groups_by_gid);
 
-void check_user_duplicates(struct check* duplicate_uid, struct check* duplicate_pwname) {
-  struct passwd* user;
+  current_gid = available_groups_by_gid[0]->gr_gid;
+  idx_first = 0;
+  idx_last = 0;
 
-  int user_count = 0;
-  struct passwd* available_users = NULL;
-  struct passwd** available_users_by_name = NULL;
-  struct passwd** available_users_by_uid = NULL;
+  /* check duplicate uids */
+  for(int i=1; i < count; i++) {
+    struct group* group = available_groups_by_gid[i];
 
-  /* collect all users */
-  setpwent();
-  for(user_count = 0; (user = getpwent()) != NULL; user_count++) {
-    if(user_count % USER_MALLOC_CHUNK == 0) {
-      available_users = realloc(available_users, (user_count + USER_MALLOC_CHUNK)*sizeof(struct passwd));
-    }
-    available_users[user_count].pw_name = strdup(user->pw_name);
-    available_users[user_count].pw_uid = user->pw_uid;
-  }
-  endpwent();
+    if(group->gr_gid == current_gid)
+      idx_last = i;
 
-  /* create two arrays that are sorted by name and gid */
-  available_users_by_name = malloc(user_count * sizeof(struct passwd*));
-  available_users_by_uid = malloc(user_count * sizeof(struct passwd*));
-  for(int i=0; i < user_count; i++) {
-    available_users_by_name[i] = &available_users[i];
-    available_users_by_uid[i] = &available_users[i];
-  }
-  qsort(available_users_by_name, user_count, sizeof(struct passwd*), compare_users_by_name);
-  qsort(available_users_by_uid, user_count, sizeof(struct passwd*), compare_users_by_uid);
-
-  for(int i=1; i < user_count; i++) {
-    struct passwd* a;
-    struct passwd* b;
-
-    a = available_users_by_uid[i-1];
-    b = available_users_by_uid[i];
-    if(a->pw_uid == b->pw_uid) {
-      check_add_findingf(duplicate_uid, "user %s and %s have the same uid %u", a->pw_name, b->pw_name, a->pw_uid);
-    }
-
-    a = available_users_by_name[i-1];
-    b = available_users_by_name[i];
-    if(strcmp(a->pw_name, b->pw_name) == 0) {
-      check_add_findingf(duplicate_pwname, "user %s has two uids %u and %u", a->pw_name, a->pw_uid, b->pw_uid);
+    if(group->gr_gid != current_gid || (i == count-1)) {
+      if((idx_last - idx_first) > 0) {
+        for(int j = idx_first; j <= idx_last; j++) {
+          check_add_findingf(duplicate_gid, "found %d groups with gid %u: %s", idx_last - idx_first + 1, current_gid, available_groups_by_gid[j]->gr_name);
+        }
+      }
+      current_gid = group->gr_gid;
+      idx_first = i;
+      idx_last = i;
     }
   }
 
-  for(int i=0; i < user_count; i++)
-    free(available_users[i].pw_name);
+  current_name = available_groups_by_name[0]->gr_name;
+  idx_first = 0;
+  idx_last = 0;
 
-  free(available_users);
-  free(available_users_by_uid);
-  free(available_users_by_name);
-}
-void check_group_duplicates(struct check* duplicate_gid, struct check* duplicate_grname) {
-  struct group* group;
+  /* check duplicate names */
+  for(int i=1; i < count; i++) {
+    struct group* group = available_groups_by_name[i];
 
-  int group_count = 0;
-  struct group* available_groups = NULL;
-  struct group** available_groups_by_name = NULL;
-  struct group** available_groups_by_gid = NULL;
+    if(strcmp(group->gr_name, current_name) == 0)
+      idx_last = i;
 
-  /* collect all groups */
-  setgrent();
-  for(group_count = 0; (group = getgrent()) != NULL; group_count++) {
-    if(group_count % GROUP_MALLOC_CHUNK == 0) {
-      available_groups = realloc(available_groups, (group_count + GROUP_MALLOC_CHUNK)*sizeof(struct group));
-    }
-    available_groups[group_count].gr_name = strdup(group->gr_name);
-    available_groups[group_count].gr_gid = group->gr_gid;
-  }
-  endgrent();
-
-  /* create two arrays that are sorted by name and gid */
-  available_groups_by_name = malloc(group_count * sizeof(struct group*));
-  available_groups_by_gid = malloc(group_count * sizeof(struct group*));
-  for(int i=0; i < group_count; i++) {
-    available_groups_by_name[i] = &available_groups[i];
-    available_groups_by_gid[i] = &available_groups[i];
-  }
-  qsort(available_groups_by_name, group_count, sizeof(struct group*), compare_groups_by_name);
-  qsort(available_groups_by_gid, group_count, sizeof(struct group*), compare_groups_by_gid);
-
-  for(int i=1; i < group_count; i++) {
-    struct group* a;
-    struct group* b;
-
-    a = available_groups_by_gid[i-1];
-    b = available_groups_by_gid[i];
-    if(a->gr_gid == b->gr_gid) {
-      check_add_findingf(duplicate_gid, "group %s and %s have the same gid %u", a->gr_name, b->gr_name, a->gr_gid);
-    }
-
-    a = available_groups_by_name[i-1];
-    b = available_groups_by_name[i];
-    if(strcmp(a->gr_name, b->gr_name) == 0) {
-      check_add_findingf(duplicate_grname, "group %s has two gids %u and %u", a->gr_name, a->gr_gid, b->gr_gid);
+    if(strcmp(group->gr_name, current_name) != 0 || (i == count-1)) {
+      if((idx_last - idx_first) > 0) {
+        for(int j = idx_first; j <= idx_last; j++) {
+          check_add_findingf(duplicate_name, "group %s has %u gids: %u", current_name, idx_last - idx_first + 1, available_groups_by_name[j]->gr_gid);
+        }
+      }
+      current_name = group->gr_name;
+      idx_first = i;
+      idx_last = i;
     }
   }
-
-  for(int i=0; i < group_count; i++)
-    free(available_groups[i].gr_name);
-
-  free(available_groups);
-  free(available_groups_by_gid);
-  free(available_groups_by_name);
 }
 
 void validate_homefile(struct check* check, struct passwd* user, const char* filename, mode_t mask) {
