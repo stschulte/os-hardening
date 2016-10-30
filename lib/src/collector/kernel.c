@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <harden/report.h>
 #include <harden/check.h>
@@ -14,13 +15,10 @@ static const char PROC_PATH[] = "/proc/sys/";
 
 static void verify_kernel_value(struct check* check, const char* key, const char* expected_value) {
   FILE* fp;
-  char* filename;
-  char finding[MAX_FINDING_LENGTH];
+  char filename[PATH_MAX];
   char kernelvalue[1024];
 
-  filename = malloc(strlen(key) + strlen(PROC_PATH) + 1);
-  strcpy(filename, PROC_PATH);
-  strcat(filename, key);
+  snprintf(filename, PATH_MAX, "%s%s", PROC_PATH, key);
 
   char* p = strchr(filename, '.');
   while(p) {
@@ -32,33 +30,22 @@ static void verify_kernel_value(struct check* check, const char* key, const char
   if(!fp) {
     switch(errno) {
     case ENOENT:
-      snprintf(finding, MAX_FINDING_LENGTH, "The kernel parameter %s could not be found", key);
-      check->result = CHECK_FAILED;
-      check_add_finding(check, finding);
+      check_add_findingf(check, "The kernel parameter %s could not be found", key);
       break;
     case EACCES:
-      snprintf(finding, MAX_FINDING_LENGTH, "The kernel parameter %s cannot be read", key);
-      check->result = CHECK_FAILED;
-      check_add_finding(check, finding);
+      check_add_findingf(check, "The kernel parameter %s cannot be read", key);
       break;
     }
   }
   else {
     errno = 0;
     if(fgets(kernelvalue, sizeof kernelvalue, fp)) {
-      size_t len = strlen(kernelvalue);
-      if(len >= 1 && kernelvalue[len -1] == '\n')
-        kernelvalue[len-1] = '\0';
-
+      kernelvalue[strcspn(kernelvalue,"\n")] = '\0';
       if(strcmp(kernelvalue, expected_value) != 0) {
-        snprintf(finding, MAX_FINDING_LENGTH, "Kernelparameter %s is set to %s instead of %s", key, kernelvalue, expected_value);
-        check->result = CHECK_FAILED;
-        check_add_finding(check, finding);
+        check_add_findingf(check, "Kernelparameter %s is set to %s instead of %s", key, kernelvalue, expected_value);
       }
     }
   }
-
-  free(filename);
 }
 
 int collector_kernel_evaluate(struct report* report) {
