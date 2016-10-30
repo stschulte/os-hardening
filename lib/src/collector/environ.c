@@ -24,29 +24,30 @@ int collector_environ_evaluate(struct report* report) {
   struct stat sb;
   struct passwd* owner;
 
-  path = strsep(&buffer, ":");
-  while(path != NULL) {
+  for(path = strsep(&buffer, ":"); path != NULL; path = strsep(&buffer, ":")) {
     if(strcmp(path, "") == 0) {
-      check_add_findingf(rootpath, "PATH contains an empty directory (PATH=%s)", s);
+      check_add_findingf(rootpath, "the PATH variable contains an empty field (PATH=%s)", s);
+      continue;
     }
     if(strcmp(path, ".") == 0) {
-      check_add_findingf(rootpath, "PATH contains \".\" (PATH=%s)", s);
+      check_add_findingf(rootpath, "the PATH variable contains \".\"");
+      continue;
     }
 
     if(stat(path, &sb) == 0) {
       if(S_ISDIR(sb.st_mode)) {
         if((sb.st_mode & 00020) != 0) {
-          check_add_findingf(rootpath, "Group write permission set on %s (%03o) (PATH=%s)", path, sb.st_mode & 07777, s);
+          check_add_findingf(rootpath, "%s has group write permissions set (mode=%03o)", path, sb.st_mode & 07777);
         }
         if((sb.st_mode & 00002) != 0) {
-          check_add_findingf(rootpath, "Other write permission set on %s (%03o) (PATH=%s)", path, sb.st_mode & 07777, s);
+          check_add_findingf(rootpath, "%s has other write permission set (mode=%03o)", path, sb.st_mode & 07777);
         }
         if(sb.st_uid != 0) {
           owner = getpwuid(sb.st_uid);
           if(owner == NULL)
-            check_add_findingf(rootpath, "Directory %s is owned by an unknown user instead of root (PATH=%s)", path, s);
+            check_add_findingf(rootpath, "%s is owned by an unknown user instead of root", path);
           else
-            check_add_findingf(rootpath, "Directory %s is owned by %s instead of root (PATH=%s)", path, owner->pw_name, s);
+            check_add_findingf(rootpath, "%s is owned by %s instead of root", path, owner->pw_name);
         }
       }
       else {
@@ -56,7 +57,7 @@ int collector_environ_evaluate(struct report* report) {
     else {
       switch(errno) {
       case ENOTDIR:
-        check_add_findingf(rootpath, "some component of %s is not a directory", path);
+        check_add_findingf(rootpath, "%s has a non-directory component", path);
         break;
       case ENOENT:
         check_add_findingf(rootpath, "%s does not exist", path);
@@ -66,8 +67,6 @@ int collector_environ_evaluate(struct report* report) {
         break;
       }
     }
-
-    path = strsep(&buffer, ":");
   }
   
   free(buffer);
