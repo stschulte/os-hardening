@@ -4,6 +4,16 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <grp.h>
+#include <harden/report.h>
+
+enum scope {
+  CHECK_EXIST = 0,
+  CHECK_OWNER = 1,
+  CHECK_GROUP = 2,
+  CHECK_MODE  = 4,
+  CHECK_ALL   = 7,
+};
+
 
 void util_init(void);
 void util_clean(void);
@@ -18,4 +28,5 @@ int is_known_gid(gid_t gid);
 int get_cached_users(struct passwd*** ptr_by_name, struct passwd*** ptr_by_uid);
 int get_cached_groups(struct group*** ptr_by_name, struct group*** ptr_by_gid);
 
+void report_add_new_check_perm(struct report* r, const char* collection, const char* id, const char* summary, const char* path, const char* expected_owner, const char* expected_group, mode_t expected_mode, enum scope flags);
 #endif

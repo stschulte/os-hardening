@@ -18,14 +18,6 @@
 
 #include <errno.h>
 
-enum scope {
-  CHECK_EXIST = 0,
-  CHECK_OWNER = 1,
-  CHECK_GROUP = 2,
-  CHECK_MODE  = 4,
-  CHECK_ALL   = 7,
-};
-
 void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogroup, const char* dir_name, dev_t devid) {
   DIR* d = opendir(dir_name);
   struct dirent *entry;
@@ -77,45 +69,6 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
     traverse_dir(sticky, nouser, nogroup, path, sb.st_dev);
   }
   closedir(d);
-}
-
-static void report_add_new_check_perm(struct report* r, const char* collection, const char* id, const char* summary, const char* path, const char* expected_owner, const char* expected_group, mode_t expected_mode, enum scope flags) {
-  struct check* c = check_new(collection, id, summary, CHECK_PASSED);
-  struct stat sb;
-  struct passwd* owner;
-  struct group* group;
-
-  if(stat(path, &sb) >=0) {
-    if(flags & CHECK_MODE) {
-      if((sb.st_mode & 07777) != expected_mode) {
-        check_add_findingf(c, "%s has incorrect permissions. Got: %03o. Expected: %03o", path, sb.st_mode & 07777, expected_mode);
-      }
-    }
-    if(flags & CHECK_OWNER) {
-      if((owner = getpwuid(sb.st_uid)) == NULL) {
-        check_add_findingf(c, "%s is owned by unknown user with uid %u. Expected: %s", path, sb.st_uid, expected_owner);
-      }
-      else if(strcmp(expected_owner, owner->pw_name) != 0) {
-        check_add_findingf(c, "%s is owned by user %s. Expected: %s", path, owner->pw_name, expected_owner);
-      }
-    }
-   if(flags & CHECK_GROUP) {
-      if((group = getgrgid(sb.st_gid)) == NULL) {
-        check_add_findingf(c, "%s is owned by unknown group with gid %u. Expected: %s", path, sb.st_gid, expected_group);
-      }
-      else if(strcmp(expected_group, group->gr_name) != 0) {
-        check_add_findingf(c, "%s is owned by group %s. Expected: %s", path, group->gr_name, expected_group);
-      }
-    }
-  }
-  else if(errno == ENOENT) {
-    check_add_findingf(c, "%s was not found", path);
-  }
-  else {
-    check_add_findingf(c, "error to stat %s: %s", path, strerror(errno));
-  }
-
-  report_add_check(r, c);
 }
 
 void verify_os_info(struct check* c, const char* file) {

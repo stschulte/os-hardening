@@ -1,10 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <harden/util.h>
+#include <harden/report.h>
+#include <harden/check.h>
 
 #include <pwd.h>
 #include <grp.h>
+#include <errno.h>
 
 #define CACHE_MALLOC_CHUNK 500
 
@@ -21,6 +28,7 @@ static struct group** groups_by_gid = NULL;
 
 static int user_count = 0;
 static int group_count = 0;
+
 
 void util_init(void) {
   user_count = cache_known_users();
@@ -206,4 +214,43 @@ int is_known_gid(gid_t gid) {
     return 0;
 
   return 1;
+}
+
+void report_add_new_check_perm(struct report* r, const char* collection, const char* id, const char* summary, const char* path, const char* expected_owner, const char* expected_group, mode_t expected_mode, enum scope flags) {
+  struct check* c = check_new(collection, id, summary, CHECK_PASSED);
+  struct stat sb;
+  struct passwd* owner;
+  struct group* group;
+
+  if(stat(path, &sb) >=0) {
+    if(flags & CHECK_MODE) {
+      if((sb.st_mode & 07777) != expected_mode) {
+        check_add_findingf(c, "%s has incorrect permissions. Got: %03o. Expected: %03o", path, sb.st_mode & 07777, expected_mode);
+      }
+    }
+    if(flags & CHECK_OWNER) {
+      if((owner = getpwuid(sb.st_uid)) == NULL) {
+        check_add_findingf(c, "%s is owned by unknown user with uid %u. Expected: %s", path, sb.st_uid, expected_owner);
+      }
+      else if(strcmp(expected_owner, owner->pw_name) != 0) {
+        check_add_findingf(c, "%s is owned by user %s. Expected: %s", path, owner->pw_name, expected_owner);
+      }
+    }
+   if(flags & CHECK_GROUP) {
+      if((group = getgrgid(sb.st_gid)) == NULL) {
+        check_add_findingf(c, "%s is owned by unknown group with gid %u. Expected: %s", path, sb.st_gid, expected_group);
+      }
+      else if(strcmp(expected_group, group->gr_name) != 0) {
+        check_add_findingf(c, "%s is owned by group %s. Expected: %s", path, group->gr_name, expected_group);
+      }
+    }
+  }
+  else if(errno == ENOENT) {
+    check_add_findingf(c, "%s was not found", path);
+  }
+  else {
+    check_add_findingf(c, "error to stat %s: %s", path, strerror(errno));
+  }
+
+  report_add_check(r, c);
 }
