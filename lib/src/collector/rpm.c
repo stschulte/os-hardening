@@ -70,6 +70,15 @@ int collector_rpm_evaluate(struct report* report) {
   report_add_check_package_absence(report, "cis", "2.1.9", "Remove talk", "talk");
   report_add_check_package_absence(report, "cis", "2.1.10", "Remove talk-server", "talk-server");
   report_add_check_package_absence(report, "cis", "2.1.11", "Remove xinetd", "xinetd");
+  report_add_check_package_absence(report, "cis", "3.2", "Remove the X Window System", "xorg-x11-server-common");
+  report_add_check_package_absence(report, "cis", "3.5", "Remove DHCP Server", "dhcp");
+  report_add_check_package_absence(report, "cis", "3.9", "Remove DNS Server", "bind");
+  report_add_check_package_absence(report, "cis", "3.10", "Remove FTP Server", "vsftpd");
+  report_add_check_package_absence(report, "cis", "3.12", "Remove Dovecot (IMAP and POP3 services)", "dovecot");
+  report_add_check_package_absence(report, "cis", "3.13", "Remove Samba", "samba");
+  report_add_check_package_absence(report, "cis", "3.14", "Remove HTTP Proxy Server", "squid");
+  report_add_check_package_absence(report, "cis", "3.15", "Remove SNMP Server", "net-snmp");
+
 
   report_add_check_package_present(report, "cis", "1.3.1", "Install AIDE", "aide");
   rpmFreeRpmrc();

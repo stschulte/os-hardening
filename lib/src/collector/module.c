@@ -58,6 +58,11 @@ int collector_module_evaluate(struct report* report) {
   report_add_new_check_module_disabled(report, ctx, "cis", "1.1.23", "Disable Mounting of squashfs Filesystems", "squashfs");
   report_add_new_check_module_disabled(report, ctx, "cis", "1.1.24", "Disable Mounting of udf Filesystems", "udf");
 
+  report_add_new_check_module_disabled(report, ctx, "cis", "4.6.1", "Disable DCCP", "dccp");
+  report_add_new_check_module_disabled(report, ctx, "cis", "4.6.2", "Disable SCTP", "sctp");
+  report_add_new_check_module_disabled(report, ctx, "cis", "4.6.3", "Disable RDS", "rds");
+  report_add_new_check_module_disabled(report, ctx, "cis", "4.6.4", "Disable TIPC", "tipc");
+
   kmod_unref(ctx);
   return 0;
 }

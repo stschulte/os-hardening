@@ -115,12 +115,16 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
   report_add_new_check_perm(report, "cis", "9.1.8", "Verify User/Group Ownership on /etc/gshadow", "/etc/gshadow", "root", "root", 0, CHECK_EXIST | CHECK_OWNER | CHECK_GROUP);
   report_add_new_check_perm(report, "cis", "9.1.9", "Verify User/Group Ownership on /etc/group", "/etc/group", "root", "root", 0, CHECK_EXIST | CHECK_OWNER | CHECK_GROUP);
 
+  report_add_new_check_perm(report, "cis", "6.1.3", "Set User/Group Owner and Permission on /etc/anacrontab", "/etc/anacrontab", "root", "root", 0600, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.4", "Set User/Group Owner and Permission on /etc/crontab", "/etc/crontab", "root", "root", 0600, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.5", "Set User/Group Owner and Permission on /etc/cron.hourly", "/etc/cron.hourly", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.6", "Set User/Group Owner and Permission on /etc/cron.daily", "/etc/cron.daily", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.7", "Set User/Group Owner and Permission on /etc/cron.weekly", "/etc/cron.weekly", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.8", "Set User/Group Owner and Permission on /etc/cron.monthly", "/etc/cron.monthly", "root", "root", 0700, CHECK_ALL);
   report_add_new_check_perm(report, "cis", "6.1.9", "Set User/Group Owner and Permission on /etc/cron.d", "/etc/cron.d", "root", "root", 0700, CHECK_ALL);
+
+  report_add_new_check_perm(report, "cis", "4.5.3", "Verify Permissions on /etc/hosts.allow", "/etc/hosts.allow", "root", "root", 0644, CHECK_OWNER | CHECK_GROUP | CHECK_MODE);
+  report_add_new_check_perm(report, "cis", "4.5.5", "Verify Permissions on /etc/hosts.deny", "/etc/hosts.deny", "root", "root", 0644, CHECK_OWNER | CHECK_GROUP | CHECK_MODE);
 
 
   if(access("/etc/motd", F_OK) != 0)

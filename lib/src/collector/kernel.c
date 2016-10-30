@@ -49,6 +49,7 @@ static void verify_kernel_value(struct check* check, const char* key, const char
 }
 
 int collector_kernel_evaluate(struct report* report) {
+  struct check* forward = check_new("cis", "4.1.1", "Disable IP Forwarding", CHECK_PASSED);
   struct check* redirect = check_new("cis", "4.1.2", "Disable Send Packet Redirects", CHECK_PASSED);
   struct check* source_route = check_new("cis", "4.2.1", "Disable Source Routed Packet Acceptance", CHECK_PASSED);
   struct check* icmpredirect = check_new("cis", "4.2.2", "Disable ICMP Redirect Acceptance", CHECK_PASSED);
@@ -58,6 +59,12 @@ int collector_kernel_evaluate(struct report* report) {
   struct check* baderror = check_new("cis", "4.2.6", "Enable Bad Error Message Protection", CHECK_PASSED);
   struct check* route = check_new("cis", "4.2.7", "Enable RFC-recommended Source Route Validation", CHECK_PASSED);
   struct check* syncookies = check_new("cis", "4.2.8", "Enable TCP SYN Cookies", CHECK_PASSED);
+
+  struct check* execshield = check_new("cis", "1.6.2", "Configure ExecShield", CHECK_PASSED);
+  struct check* randomizeva = check_new("cis", "1.6.3", "Enable Randomized Virtual Memory Region Placement", CHECK_PASSED);
+
+  verify_kernel_value(forward, "net.ipv4.ip_forward", "0");
+  report_add_check(report, forward);
 
   verify_kernel_value(redirect, "net.ipv4.conf.all.send_redirects", "0");
   verify_kernel_value(redirect, "net.ipv4.conf.default.send_redirects", "0");
@@ -91,6 +98,12 @@ int collector_kernel_evaluate(struct report* report) {
 
   verify_kernel_value(syncookies, "net.ipv4.tcp_syncookies", "1");
   report_add_check(report, syncookies);
+
+  verify_kernel_value(execshield, "kernel.exec-shield", "1");
+  report_add_check(report, execshield);
+
+  verify_kernel_value(randomizeva, "kernel.randomize_va_space", "2");
+  report_add_check(report, randomizeva);
 
   return 0;
 }
