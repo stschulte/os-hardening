@@ -14,7 +14,7 @@ Scored CIS Checks
 [x] 1.1.16 Add noexec Option to /dev/shm Partition (Scored)
 [x] 1.1.17 Set Sticky Bit on All World-Writable Directories (Scored)
 [ ] 1.2.2 Verify Red Hat GPG Key is Installed (Scored)
-[ ] 1.2.3 Verify that gpgcheck is Globally Activated (Scored)
+[x] 1.2.3 Verify that gpgcheck is Globally Activated (Scored)
 [x] 1.3.1 Install AIDE (Scored)
 [x] 1.3.2 Implement Periodic Execution of File Integrity (Scored)
 [x] 1.4.1 Enable SELinux in /etc/grub.conf (Scored)

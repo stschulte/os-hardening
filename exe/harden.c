@@ -22,6 +22,7 @@
 #include <harden/collector/services.h>
 #include <harden/collector/grub.h>
 #include <harden/collector/cron.h>
+#include <harden/collector/yum.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -53,6 +54,8 @@ int main(int argc, char** argv) {
   collector_user_evaluate(r);
   printf("Running collector: grub\n");
   collector_grub_evaluate(r);
+  printf("Running collector: yum\n");
+  collector_yum_evaluate(r);
 #ifdef HAVE_KMOD
   printf("Running collector: module\n");
   collector_module_evaluate(r);
