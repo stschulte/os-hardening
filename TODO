@@ -148,7 +148,7 @@ Scored CIS Checks
 [x] 9.2.8 Check User Dot File Permissions (Scored)
 [x] 9.2.9 Check Permissions on User .netrc Files (Scored)
 [x] 9.2.10 Check for Presence of User .rhosts Files (Scored)
-[ ] 9.2.11 Check Groups in /etc/passwd (Scored)
+[x] 9.2.11 Check Groups in /etc/passwd (Scored)
 [ ] 9.2.12 Check That Users Are Assigned Valid Home Directories (Scored)
 [ ] 9.2.13 Check User Home Directory Ownership (Scored)
 [x] 9.2.14 Check for Duplicate UIDs (Scored)

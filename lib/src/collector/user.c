@@ -254,6 +254,8 @@ int collector_user_evaluate(struct report* report) {
   struct check* root = check_new("cis", "9.2.5", "Verify No UID 0 Accounts Exist Other Than root", CHECK_PASSED);
 
   struct check* home_perm = check_new("cis", "9.2.7", "Check Permissions on User Home Directories", CHECK_PASSED);
+
+  struct check* unknowngid = check_new("cis", "9.2.11", "Check Groups in /etc/passwd", CHECK_PASSED);
   struct check* home_owner = check_new("cis", "9.2.13", "Check User Home Directory Ownership", CHECK_PASSED);
 
   struct check* dotfile_perm = check_new("cis", "9.2.8", "Check User Dot File Permissions", CHECK_PASSED);
@@ -305,6 +307,11 @@ int collector_user_evaluate(struct report* report) {
   }
 
   while((user = getpwent()) != NULL) {
+
+    if(!is_known_gid(user->pw_gid)) {
+      check_add_findingf(unknowngid, "user %s has gid %u, which is unknown", user->pw_name, user->pw_gid);
+    }
+
     if(user->pw_uid == 0) {
       if(strcmp(user->pw_name, "root") != 0) {
         check_add_findingf(root, "found another user with uid 0: %s", user->pw_name);
@@ -431,5 +438,6 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, duplicate_pwname);
   report_add_check(report, duplicate_grname);
   report_add_check(report, inactive);
+  report_add_check(report, unknowngid);
   return 0;
 }
