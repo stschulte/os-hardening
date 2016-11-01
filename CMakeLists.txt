@@ -32,6 +32,7 @@ LIST(APPEND HARDEN_SOURCES lib/src/collector/mount.c)
 LIST(APPEND HARDEN_SOURCES lib/src/collector/environ.c)
 LIST(APPEND HARDEN_SOURCES lib/src/collector/services.c)
 LIST(APPEND HARDEN_SOURCES lib/src/collector/grub.c)
+LIST(APPEND HARDEN_SOURCES lib/src/collector/cron.c)
 
 if(RPM_FOUND)
   set(HAVE_RPM 1)

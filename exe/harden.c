@@ -21,6 +21,7 @@
 #include <harden/collector/environ.h>
 #include <harden/collector/services.h>
 #include <harden/collector/grub.h>
+#include <harden/collector/cron.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -42,6 +43,8 @@ int main(int argc, char** argv) {
   printf("Initialize utility functions\n");
   util_init();
 
+  printf("Running collector: cron\n");
+  collector_cron_evaluate(r);
   printf("Running collector: kernel\n");
   collector_kernel_evaluate(r);
   printf("Running collector: files\n");
