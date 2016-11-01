@@ -230,6 +230,49 @@ int parse_default_useradd(int* inactive, int* expire) {
   return 0;
 }
 
+static void parse_passwd(struct check* homexist) {
+  FILE* f = fopen("/etc/passwd", "r");
+  struct passwd* user;
+  struct stat sb;
+
+  if(f == NULL) {
+    fprintf(stderr, "unable to open /etc/passwd: %s", strerror(errno));
+    return;
+  }
+
+  while((user = fgetpwent(f)) != NULL) {
+    if(!is_dialog_user(user))
+      continue;
+
+    if(user->pw_dir == NULL) {
+      check_add_findingf(homexist, "the user %s does have an empty homedirectory", user->pw_name);
+      continue;
+    }
+
+    if(strcmp(user->pw_dir, "/dev/null") == 0)
+      continue;
+
+    if(stat(user->pw_dir, &sb) < 0) {
+      switch(errno) {
+      case ENOTDIR:
+        check_add_findingf(homexist, "homedirectory of user %s: %s has a non-directory component", user->pw_name, user->pw_dir);
+        break;
+      case ENOENT:
+        check_add_findingf(homexist, "homedirectory of user %s: %s does no exist", user->pw_name, user->pw_dir);
+        break;
+      default:
+        check_add_findingf(homexist, "homedirectory of user %s: unable to stat %s: %s", user->pw_name, user->pw_dir, strerror(errno));
+        break;
+      }
+    }
+    else if(!S_ISDIR(sb.st_mode)) {
+      check_add_findingf(homexist, "homedirectory of user %s: %s is not a directory", user->pw_name, user->pw_dir);
+    }
+  }
+
+  fclose(f);
+}
+
 int collector_user_evaluate(struct report* report) {
   struct passwd* user;
   struct spwd* shadow;
@@ -256,6 +299,7 @@ int collector_user_evaluate(struct report* report) {
   struct check* home_perm = check_new("cis", "9.2.7", "Check Permissions on User Home Directories", CHECK_PASSED);
 
   struct check* unknowngid = check_new("cis", "9.2.11", "Check Groups in /etc/passwd", CHECK_PASSED);
+  struct check* home_valid = check_new("cis", "9.2.12", "Check That Users Are Assigned Valid Home Directories", CHECK_PASSED);
   struct check* home_owner = check_new("cis", "9.2.13", "Check User Home Directory Ownership", CHECK_PASSED);
 
   struct check* dotfile_perm = check_new("cis", "9.2.8", "Check User Dot File Permissions", CHECK_PASSED);
@@ -273,9 +317,10 @@ int collector_user_evaluate(struct report* report) {
 
   struct check* inactive = check_new("cis", "7.5", "Lock Inactive User Accounts", CHECK_PASSED);
 
-
   check_user_duplicates(duplicate_uid, duplicate_pwname);
   check_group_duplicates(duplicate_gid, duplicate_grname);
+
+  parse_passwd(home_valid);
 
   int default_inactive = -1;
   if(parse_default_useradd(&default_inactive, NULL) == 0) {
@@ -428,6 +473,7 @@ int collector_user_evaluate(struct report* report) {
   report_add_check(report, root_group);
   report_add_check(report, home_perm);
   report_add_check(report, home_owner);
+  report_add_check(report, home_valid);
   report_add_check(report, dotfile_perm);
   report_add_check(report, netrc_perm);
   report_add_check(report, rhost_exist);
