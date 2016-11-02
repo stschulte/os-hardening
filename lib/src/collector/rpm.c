@@ -11,6 +11,29 @@
 #include <harden/report.h>
 #include <harden/collector/rpm.h>
 
+int gpg_key_installed(const char* keyid) {
+  int found = 0;
+  rpmts ts = rpmtsCreate();
+  rpmdbMatchIterator mi = rpmtsInitIterator(ts, RPMTAG_NAME, "gpg-pubkey", 0);
+  Header h;
+
+  while((h = rpmdbNextIterator(mi)) != NULL) {
+    const char* version = headerGetString(h, RPMTAG_VERSION);
+
+    if(version == NULL)
+      continue;
+
+    if(strcmp(version, keyid) == 0) {
+      found = 1;
+      break;
+    }
+  }
+
+  rpmdbFreeIterator(mi);
+  rpmtsFree(ts);
+  return found;
+}
+
 int package_installed(const char* name) {
   int found = 0;
 
@@ -54,8 +77,13 @@ void report_add_check_package_present(struct report* r, const char* collection, 
 }
 
 int collector_rpm_evaluate(struct report* report) {
+  struct check* redhat_key = check_new("cis", "1.2.2", "Verify Red Hat GPG Key is Installed", CHECK_PASSED);
 
   rpmReadConfigFiles(NULL, NULL);
+
+  if(gpg_key_installed("fd431d51") == 0) {
+    check_add_findingf(redhat_key, "The product signing key fd431d51 was not found in rpm keyring");
+  }
 
   report_add_check_package_absence(report, "cis", "1.4.4", "Remove SETroubleshoot", "setroubleshoot");
   report_add_check_package_absence(report, "cis", "1.4.5", "Remove MCS Translation Service (mcstrans)", "mcstrans");
@@ -82,6 +110,8 @@ int collector_rpm_evaluate(struct report* report) {
 
   report_add_check_package_present(report, "cis", "1.3.1", "Install AIDE", "aide");
   rpmFreeRpmrc();
+
+  report_add_check(report, redhat_key);
 
   return 0;
 }
