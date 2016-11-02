@@ -22,7 +22,7 @@ Scored CIS Checks
 [x] 1.4.3 Set the SELinux Policy (Scored)
 [x] 1.4.4 Remove SETroubleshoot (Scored)
 [x] 1.4.5 Remove MCS Translation Service (mcstrans) (Scored)
-[ ] 1.4.6 Check for Unconfined Daemons (Scored)
+[x] 1.4.6 Check for Unconfined Daemons (Scored)
 [x] 1.5.1 Set User/Group Owner on /etc/grub.conf (Scored)
 [x] 1.5.2 Set Permissions on /etc/grub.conf (Scored)
 [x] 1.5.3 Set Boot Loader Password (Scored)

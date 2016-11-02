@@ -17,6 +17,7 @@ pkg_check_modules(KMOD libkmod)
 pkg_check_modules(SELINUX libselinux)
 pkg_check_modules(RPM rpm)
 pkg_check_modules(SYSTEMD libsystemd)
+pkg_check_modules(PROCPS REQUIRED libprocps)
 if(SYSTEMD_FOUND)
   pkg_check_modules(GIO REQUIRED gio-2.0)
 endif()
@@ -33,6 +34,7 @@ LIST(APPEND HARDEN_SOURCES lib/src/collector/services.c)
 LIST(APPEND HARDEN_SOURCES lib/src/collector/grub.c)
 LIST(APPEND HARDEN_SOURCES lib/src/collector/cron.c)
 LIST(APPEND HARDEN_SOURCES lib/src/collector/yum.c)
+LIST(APPEND HARDEN_SOURCES lib/src/collector/process.c)
 
 if(RPM_FOUND)
   set(HAVE_RPM 1)
@@ -61,6 +63,7 @@ include_directories( "${PROJECT_SOURCE_DIR}/lib/src"
   "${PROJECT_SOURCE_DIR}/lib/inc")
 
 add_executable(harden ${HARDEN_SOURCES})
+target_link_libraries( harden ${PROCPS_LIBRARIES})
 
 if(SELINUX_FOUND)
   target_link_libraries( harden ${SELINUX_LIBRARIES})
