@@ -1,3 +1,4 @@
 #cmakedefine HAVE_KMOD 1
 #cmakedefine HAVE_RPM 1
 #cmakedefine HAVE_SYSTEMD 1
+#cmakedefine HAVE_SELINUX 1

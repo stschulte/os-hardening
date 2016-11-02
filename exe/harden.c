@@ -16,7 +16,10 @@
 #include <harden/collector/rpm.h>
 #endif
 
+#ifdef HAVE_SELINUX
 #include <harden/collector/selinux.h>
+#endif
+
 #include <harden/collector/mount.h>
 #include <harden/collector/environ.h>
 #include <harden/collector/services.h>
@@ -60,8 +63,10 @@ int main(int argc, char** argv) {
   printf("Running collector: module\n");
   collector_module_evaluate(r);
 #endif
+#ifdef HAVE_SELINUX
   printf("Running collector: selinux\n");
   collector_selinux_evaluate(r);
+#endif
   printf("Running collector: mount\n");
   collector_mount_evaluate(r);
   printf("Running collector: environ\n");
