@@ -27,6 +27,7 @@
 #include <harden/collector/cron.h>
 #include <harden/collector/yum.h>
 #include <harden/collector/process.h>
+#include <harden/collector/ssh.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -48,6 +49,8 @@ int main(int argc, char** argv) {
   printf("Initialize utility functions\n");
   util_init();
 
+  printf("Running collector: ssh\n");
+  collector_ssh_evaluate(r);
   printf("Running collector: process\n");
   collector_process_evaluate(r);
   printf("Running collector: cron\n");
