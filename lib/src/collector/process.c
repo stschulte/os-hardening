@@ -23,7 +23,6 @@ int collector_process_evaluate(struct report* report) {
 #endif
 
 
-  printf("running openproc\n");
   pt = openproc(PROC_FILLSTATUS);
   if(pt == NULL) {
     fprintf(stderr, "unable to read process table");
