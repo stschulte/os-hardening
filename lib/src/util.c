@@ -42,8 +42,13 @@ void util_clean(void) {
   free(groups_by_name);
   free(groups_by_gid);
 
-  for(int i=0; i < user_count; i++)
+  for(int i=0; i < user_count; i++) {
     free(users[i].pw_name);
+    free(users[i].pw_passwd);
+    free(users[i].pw_gecos);
+    free(users[i].pw_dir);
+    free(users[i].pw_shell);
+  }
 
   for(int i=0; i < group_count; i++)
     free(groups[i].gr_name);
@@ -122,8 +127,14 @@ int cache_known_users(void) {
       users = realloc(users, (count + CACHE_MALLOC_CHUNK)*sizeof(struct passwd));
     }
     uids[count] = user->pw_uid;
+
     users[count].pw_name = strdup(user->pw_name);
+    users[count].pw_passwd = strdup(user->pw_passwd);
     users[count].pw_uid = user->pw_uid;
+    users[count].pw_gid = user->pw_gid;
+    users[count].pw_gecos = strdup(user->pw_gecos);
+    users[count].pw_dir = strdup(user->pw_dir);
+    users[count].pw_shell = strdup(user->pw_shell);
   }
   endpwent();
 
