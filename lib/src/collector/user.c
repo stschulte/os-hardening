@@ -430,7 +430,7 @@ int collector_user_evaluate(struct report* report) {
 
         if(user->pw_uid >= 500 && strcmp(user->pw_name, "nfsnobody") != 0) {
           if(sb_homedir.st_uid != user->pw_uid) {
-            if((owner = getpwuid(sb_homedir.st_uid)) != NULL) {
+            if((owner = cached_getpwuid(sb_homedir.st_uid)) != NULL) {
               check_add_findingf(home_owner, "user %s homedirectory %s is owned by %s", user->pw_name, user->pw_dir, owner->pw_name);
             }
             else {

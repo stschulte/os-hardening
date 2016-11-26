@@ -227,6 +227,17 @@ int is_known_gid(gid_t gid) {
   return 1;
 }
 
+struct passwd* cached_getpwuid(uid_t uid) {
+  struct passwd match = { NULL, NULL, uid, 0, NULL, NULL, NULL };
+  struct passwd* key = &match;
+  struct passwd** result = bsearch(&key, users_by_uid, user_count, sizeof(struct passwd*), compare_users_by_uid);
+
+  if(result == NULL)
+    return NULL;
+
+  return *result;
+}
+
 void report_add_new_check_perm(struct report* r, const char* collection, const char* id, const char* summary, const char* path, const char* expected_owner, const char* expected_group, mode_t expected_mode, enum scope flags) {
   struct check* c = check_new(collection, id, summary, CHECK_PASSED);
   struct stat sb;

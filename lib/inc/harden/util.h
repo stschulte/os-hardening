@@ -27,5 +27,7 @@ int is_known_gid(gid_t gid);
 int get_cached_users(struct passwd*** ptr_by_name, struct passwd*** ptr_by_uid);
 int get_cached_groups(struct group*** ptr_by_name, struct group*** ptr_by_gid);
 
+struct passwd* cached_getpwuid(uid_t uid);
+
 void report_add_new_check_perm(struct report* r, const char* collection, const char* id, const char* summary, const char* path, const char* expected_owner, const char* expected_group, mode_t expected_mode, enum scope flags);
 #endif
