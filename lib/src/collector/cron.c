@@ -15,7 +15,7 @@
 
 #define SYSCRONTAB    "/etc/crontab"
 #define SYS_CROND_DIR "/etc/cron.d"
-#define SPOOL_DIR     "/var/spool/cron/crontabs"
+#define SPOOL_DIR     "/var/spool/cron"
 
 #define REGEX_CRONTAB_TIME_ANY "^[0-9/*]+[[:blank:]]+[0-9/*]+[[:blank:]]+[0-9/*]+[[:blank:]]+[0-9/*]+[[:blank:]]+[0-9/*]+[[:blank:]]+"
 
