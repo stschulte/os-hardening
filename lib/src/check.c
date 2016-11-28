@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <harden/check.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -48,14 +47,6 @@ void check_list_free(struct check_list* check_list) {
     free(current);
     current = next;
   }
-}
-
-bool check_passed(struct check* check) {
-  return (check->result == CHECK_PASSED);
-}
-
-bool check_failed(struct check* check) {
-  return (check->result != CHECK_PASSED);
 }
 
 void check_free(struct check* check) {

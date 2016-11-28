@@ -4,7 +4,6 @@
 #define MAX_FINDING_LENGTH 1024
 
 #include <string.h>
-#include <stdbool.h>
 
 enum check_result {
   CHECK_PASSED = 0,
@@ -38,8 +37,6 @@ struct check* check_new(const char* collection, const char* id, const char* summ
 void check_add_finding(struct check* check, const char* description);
 void check_add_findingf(struct check* check, const char* fmt, ...) __attribute__((format (printf, 2, 3)));
 
-bool check_passed(struct check* check);
-bool check_failed(struct check* check);
 void check_free(struct check* check);
 
 #endif
