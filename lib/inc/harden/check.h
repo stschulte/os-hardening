@@ -2,13 +2,16 @@
 #define _CHECK_H
 
 #define MAX_FINDING_LENGTH 1024
+#define CHECK_MAX_FINDINGS 200
 
 #include <string.h>
 
 enum check_result {
-  CHECK_PASSED = 0,
-  CHECK_FAILED = 1,
-  CHECK_SKIPPED = 2
+  CHECK_UNKNOWN              = 0,
+  CHECK_PASSED               = 1,
+  CHECK_FAILED               = 2,
+  CHECK_SKIPPED              = 4,
+  CHECK_REACHED_MAX_FINDINGS = 8
 };
 
 struct finding {
@@ -29,6 +32,7 @@ struct check {
   char* summary;
   enum check_result result;
   struct finding* findings;
+  int num_findings;
 };
 
 

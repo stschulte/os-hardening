@@ -86,24 +86,25 @@ void report_print_summary(struct report *r, enum report_flags flags) {
     check = list->check;
     checks_count++;
     findings = check->findings;
-    switch(check->result) {
-    case CHECK_PASSED:
+    if(check->result & CHECK_PASSED) {
       checks_passed++;
       if((flags & REPORT_FAILED_ONLY) == 0)
         printf("[\033[32;1mPASSED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
-      break;
-    case CHECK_SKIPPED:
+    }
+    else if(check->result & CHECK_SKIPPED) {
       checks_passed++;
       if((flags & REPORT_FAILED_ONLY) == 0)
         printf("[\033[33;1m SKIP \033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
-      break;
-    default:
+    }
+    else {
       printf("[\033[31;1mFAILED\033[0m] %s-%s: %s\n", check->collection, check->id, check->summary);
       while(findings != NULL) {
         printf("     \033[31m[●]\033[0m %s\n", findings->finding);
         findings = findings->next;
       }
-      break;
+      if(check->result & CHECK_REACHED_MAX_FINDINGS) {
+        printf("     \033[31m[●]\033[0m %s\n", "... and more");
+      }
     }
     list = list->next;
   }

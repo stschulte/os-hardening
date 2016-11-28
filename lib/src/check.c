@@ -11,19 +11,26 @@ struct check* check_new(const char* collection, const char* id, const char* summ
   check->summary = strdup(summary);
   check->result = result;
   check->findings = NULL;
+  check->num_findings = 0;
   return check;
 }
 
 void check_add_finding(struct check* check, const char* description) {
-  struct finding *finding = malloc(sizeof(struct finding));
+  struct finding *finding;
 
+  if(check->num_findings == CHECK_MAX_FINDINGS) {
+    check->result |= CHECK_REACHED_MAX_FINDINGS;
+    return;
+  }
+
+  finding = malloc(sizeof(struct finding));
   strncpy(finding->finding, description, MAX_FINDING_LENGTH);
-
 
   finding->next = check->findings;
   check->findings = finding;
 
   check->result = CHECK_FAILED;
+  check->num_findings++;
 }
 
 void check_add_findingf(struct check* check, const char* fmt, ...) {
