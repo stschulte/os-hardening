@@ -13,7 +13,7 @@
 #include <harden/check.h>
 #include <harden/collector/cron.h>
 
-#define YUMREPODIR "/etc/yum/yum.repos.d"
+#define YUMREPODIR "/etc/yum.repos.d"
 
 static int not_a_repo(struct dirent* entry) {
   size_t len = strlen(entry->d_name);
