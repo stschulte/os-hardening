@@ -10,6 +10,7 @@
 
 #include <dirent.h>
 #include <limits.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <mntent.h>
@@ -32,7 +33,7 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
     if((strcmp(entry->d_name, "..") == 0) || (strcmp(entry->d_name, ".") == 0))
       continue;
 
-    // construct the full path to use stat
+    // construct the full path to show in findings
     int path_length;
     char path[PATH_MAX];
     if(strcmp(dir_name, "/") == 0) {
@@ -43,7 +44,7 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
     }
 
     struct stat sb;
-    lstat(path, &sb);
+    fstatat(dirfd(d), entry->d_name, &sb, AT_SYMLINK_NOFOLLOW);
 
     if(is_known_uid(sb.st_uid) == 0) {
       check_add_findingf(nouser, "owner %d unknown: %s", sb.st_uid, path);
