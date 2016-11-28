@@ -28,7 +28,7 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
     return;
   }
 
-  while((entry = readdir(d)) != NULL) {
+  while(((entry = readdir(d)) != NULL) && ((sticky->result & nouser->result & nogroup->result & CHECK_MAX_FINDINGS) == 0)) {
     // Skip .. and . directory
     if((strcmp(entry->d_name, "..") == 0) || (strcmp(entry->d_name, ".") == 0))
       continue;
