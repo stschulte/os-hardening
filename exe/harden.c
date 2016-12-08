@@ -26,7 +26,9 @@
 #include <harden/collector/grub.h>
 #include <harden/collector/cron.h>
 #include <harden/collector/yum.h>
+#ifdef HAVE_PROCPS
 #include <harden/collector/process.h>
+#endif
 #include <harden/collector/ssh.h>
 
 #include <errno.h>
@@ -51,8 +53,10 @@ int main(int argc, char** argv) {
 
   printf("Running collector: ssh\n");
   collector_ssh_evaluate(r);
+#ifdef HAVE_PROCPS
   printf("Running collector: process\n");
   collector_process_evaluate(r);
+#endif
   printf("Running collector: cron\n");
   collector_cron_evaluate(r);
   printf("Running collector: kernel\n");
