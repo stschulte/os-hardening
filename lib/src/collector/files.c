@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -44,7 +46,7 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
     }
 
     struct stat sb;
-    fstatat(dirfd(d), entry->d_name, &sb, AT_SYMLINK_NOFOLLOW);
+    fstatat(dirfd(d), entry->d_name, &sb, AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT);
 
     if(is_known_uid(sb.st_uid) == 0) {
       check_add_findingf(nouser, "owner %d unknown: %s", sb.st_uid, path);
