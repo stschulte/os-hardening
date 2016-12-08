@@ -66,6 +66,9 @@ int collector_ssh_evaluate(struct report* report) {
   struct check* rootlogin = check_new("cis", "6.2.8", "Disable SSH Root Login", CHECK_PASSED);
   struct check* permitempty = check_new("cis", "6.2.9", "Set SSH PermitEmptyPasswords to No", CHECK_PASSED);
   struct check* userenv = check_new("cis", "6.2.10", "Do Not Allow Users to Set Environment Options", CHECK_PASSED);
+  struct check* cipher = check_new("cis", "6.2.11", "Use Only Approved Cipher in Counter Mode", CHECK_PASSED);
+  struct check* alive = check_new("cis", "6.2.12", "Set Idle Timeout Interval for User Login", CHECK_PASSED);
+  struct check* banner = check_new("cis", "6.2.14", "Set SSH Banner", CHECK_PASSED);
 
   FILE* stream;
   char* line = NULL;
@@ -81,6 +84,10 @@ int collector_ssh_evaluate(struct report* report) {
   int found_x11forward = 0;
   int found_authtries = 0;
   int found_rootlogin = 0;
+  int found_cipher = 0;
+  int found_alive_interval = 0;
+  int found_alive_count = 0;
+  int found_banner = 0;
 
   if((stream = fopen(SSHD_CONF, "r")) == NULL) {
   }
@@ -115,6 +122,27 @@ int collector_ssh_evaluate(struct report* report) {
       if(strcasecmp(key, "PermitUserEnvironment") == 0 && strcasecmp(value, "no") != 0)
         check_add_findingf(userenv, "%s:%d PermitUserEnvironment is set to %s instead of no", SSHD_CONF, linenr, value);
 
+      if(strcasecmp(key, "ClientAliveInterval") == 0) {
+        found_alive_interval = 1;
+        if(strcasecmp(value, "300") != 0) {
+          check_add_findingf(alive, "%s:%d ClientAliveInterval is set to %s instead of 300", SSHD_CONF, linenr, value);
+        }
+      }
+
+      if(strcasecmp(key, "ClientAliveCountMax") == 0) {
+        found_alive_count = 1;
+        if(strcasecmp(value, "0") != 0) {
+          check_add_findingf(alive, "%s:%d ClientAliveCountMax is set to %s instead of 0", SSHD_CONF, linenr, value);
+        }
+      }
+
+      if(strcasecmp(key, "Ciphers") == 0) {
+        found_cipher = 1;
+        if(strcasecmp(value, "aes128-ctr,aes192-ctr,aes256-ctr") != 0) {
+          check_add_findingf(cipher, "%s:%d Ciphers is set to %s instead of aes128-ctr,aes192-ctr,aes256-ctr", SSHD_CONF, linenr, value);
+        }
+      }
+
       if(strcasecmp(key, "X11Forwarding") == 0) {
         found_x11forward = 1;
         if(strcasecmp(value, "no") != 0) {
@@ -135,6 +163,13 @@ int collector_ssh_evaluate(struct report* report) {
           check_add_findingf(rootlogin, "%s:%d PermitRootLogin is set to %s instead of no", SSHD_CONF, linenr, value);
         }
       }
+
+      if(strcasecmp(key, "Banner") == 0) {
+        found_banner = 1;
+        if(strcasecmp(value, "/etc/issue.net") != 0) {
+          check_add_findingf(banner, "%s:%d Banner is set to %s instead of /etc/issue.net", SSHD_CONF, linenr, value);
+        }
+      }
     }
     free(line);
     fclose(stream);
@@ -146,6 +181,14 @@ int collector_ssh_evaluate(struct report* report) {
     check_add_findingf(authtries, "%s: MaxAuthTries not found but should be set to 4 or less", SSHD_CONF);
   if(found_rootlogin == 0)
     check_add_findingf(rootlogin, "%s: PermitRootLogin is not found but should be set to no", SSHD_CONF);
+  if(found_cipher == 0)
+    check_add_findingf(cipher, "%s: Ciphers is not found but should be set to aes128-ctr,aes192-ctr,aes256-ctr", SSHD_CONF);
+  if(found_alive_interval == 0)
+    check_add_findingf(alive, "%s: ClientAliveInterval is not found but should be set to 300", SSHD_CONF);
+  if(found_alive_count == 0)
+    check_add_findingf(alive, "%s: ClientAliveCountMax is not found but should be set to 0", SSHD_CONF);
+  if(found_banner == 0)
+    check_add_findingf(alive, "%s: Banner is not found but should be set to /etc/issue.net", SSHD_CONF);
 
   report_add_check(report, proto);
   report_add_check(report, loglevel);
@@ -156,6 +199,9 @@ int collector_ssh_evaluate(struct report* report) {
   report_add_check(report, rootlogin);
   report_add_check(report, permitempty);
   report_add_check(report, userenv);
+  report_add_check(report, cipher);
+  report_add_check(report, alive);
+  report_add_check(report, banner);
 
   return 0;
 }
