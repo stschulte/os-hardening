@@ -289,6 +289,18 @@ struct passwd* cached_getpwuid(uid_t uid) {
   return *result;
 }
 
+struct spwd* cached_getspnam(char* name) {
+  struct spwd match = { name, NULL, 0, 0, 0, 0, 0, 0, 0 };
+  struct spwd * key = &match;
+  struct spwd** result = bsearch(&key, shadows_by_name, shadow_count, sizeof(struct spwd*), compare_shadows_by_name);
+
+  if(result == NULL)
+    return NULL;
+
+  return *result;
+}
+
+
 void report_add_new_check_perm(struct report* r, const char* collection, const char* id, const char* summary, const char* path, const char* expected_owner, const char* expected_group, mode_t expected_mode, enum scope flags) {
   struct check* c = check_new(collection, id, summary, CHECK_PASSED);
   struct stat sb;

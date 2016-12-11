@@ -380,7 +380,7 @@ int collector_user_evaluate(struct report* report) {
     if(!is_dialog_user(user))
       continue;
 
-    if((shadow = getspnam(user->pw_name)) != NULL) {
+    if((shadow = cached_getspnam(user->pw_name)) != NULL) {
 
       if(strcmp(shadow->sp_pwdp, "") == 0) {
         check_add_findingf(pw_empty, "user %s has an empty password", user->pw_name);
