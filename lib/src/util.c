@@ -11,6 +11,7 @@
 
 #include <pwd.h>
 #include <grp.h>
+#include <shadow.h>
 #include <errno.h>
 
 #define CACHE_MALLOC_CHUNK 500
@@ -22,23 +23,29 @@ static struct passwd* users = NULL;
 static struct passwd** users_by_name = NULL;
 static struct passwd** users_by_uid = NULL;
 
+static struct spwd*  shadows = NULL;
+static struct spwd** shadows_by_name = NULL;
+
 static struct group* groups = NULL;
 static struct group** groups_by_name = NULL;
 static struct group** groups_by_gid = NULL;
 
 static int user_count = 0;
 static int group_count = 0;
+static int shadow_count = 0;
 
 
 void util_init(void) {
   user_count = cache_known_users();
   group_count = cache_known_groups();
-  printf("init: cached %d users and %d groups\n", user_count, group_count);
+  shadow_count = cache_known_shadows();
+  printf("init: cached %d users, %d shadow information and %d groups\n", user_count, shadow_count, group_count);
 }
 
 void util_clean(void) {
   free(users_by_name);
   free(users_by_uid);
+  free(shadows_by_name);
   free(groups_by_name);
   free(groups_by_gid);
 
@@ -50,10 +57,16 @@ void util_clean(void) {
     free(users[i].pw_shell);
   }
 
+  for(int i=0; i < shadow_count; i++) {
+    free(shadows[i].sp_namp);
+    free(shadows[i].sp_pwdp);
+  }
+
   for(int i=0; i < group_count; i++)
     free(groups[i].gr_name);
 
   free(users);
+  free(shadows);
   free(groups);
 
   free(uids);
@@ -99,6 +112,12 @@ int compare_users_by_name(const void* a, const void *b) {
   return strcmp(user_a->pw_name, user_b->pw_name);
 }
 
+int compare_shadows_by_name(const void* a, const void *b) {
+  struct spwd* user_a = *( (struct spwd**)a );
+  struct spwd* user_b = *( (struct spwd**)b );
+  return strcmp(user_a->sp_namp, user_b->sp_namp);
+}
+
 int compare_groups_by_gid(const void* a, const void* b) {
   struct group* group_a = *( (struct group**)a );
   struct group* group_b = *( (struct group**)b );
@@ -114,6 +133,38 @@ int compare_groups_by_name(const void* a, const void* b) {
   struct group* group_a = *( (struct group**)a );
   struct group* group_b = *( (struct group**)b );
   return strcmp(group_a->gr_name, group_b->gr_name);
+}
+
+int cache_known_shadows(void) {
+  struct spwd* user;
+  int count;
+
+  setspent();
+  for(count = 0; (user = getspent()) != NULL; count++) {
+    if(count % CACHE_MALLOC_CHUNK == 0) {
+      shadows = realloc(shadows, (count + CACHE_MALLOC_CHUNK)*sizeof(struct spwd));
+    }
+
+    shadows[count].sp_namp = strdup(user->sp_namp);
+    shadows[count].sp_pwdp = strdup(user->sp_pwdp);
+    shadows[count].sp_lstchg = user->sp_lstchg;
+    shadows[count].sp_min = user->sp_min;
+    shadows[count].sp_warn = user->sp_warn;
+    shadows[count].sp_inact = user->sp_inact;
+    shadows[count].sp_expire = user->sp_expire;
+    shadows[count].sp_flag = user->sp_flag;
+  }
+  endspent();
+
+  shadows = realloc(shadows, count*sizeof(struct spwd));
+  shadows_by_name = malloc(count * sizeof(struct spwd*));
+
+  for(int i=0; i < count; i++) {
+    shadows_by_name[i] = &shadows[i];
+  }
+
+  qsort(shadows_by_name, count, sizeof(struct spwd*), compare_shadows_by_name);
+  return count;
 }
 
 int cache_known_users(void) {

@@ -19,6 +19,7 @@ void util_clean(void);
 
 int cache_known_users(void);
 int cache_known_groups(void);
+int cache_known_shadows(void);
 
 int is_dialog_user(struct passwd* user);
 int is_known_uid(uid_t uid);
