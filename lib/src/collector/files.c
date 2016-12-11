@@ -21,6 +21,8 @@
 
 #include <errno.h>
 
+static long files = 0;
+
 void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogroup, const char* dir_name, dev_t devid) {
   DIR* d = opendir(dir_name);
   struct dirent *entry;
@@ -44,6 +46,8 @@ void traverse_dir(struct check* sticky, struct check* nouser, struct check* nogr
     else {
       path_length = snprintf(path, PATH_MAX, "%s/%s", dir_name, entry->d_name);
     }
+
+    files++;
 
     struct stat sb;
     fstatat(dirfd(d), entry->d_name, &sb, AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT);
@@ -143,6 +147,8 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
 
   struct mntent *mount;
 
+  files = 0;
+
   if(flags & COLLECTOR_FAST) {
     stickybit->result = CHECK_SKIPPED;
     nouser->result = CHECK_SKIPPED;
@@ -179,6 +185,7 @@ int collector_files_evaluate(struct report* report, enum collector_flags flags) 
     endmntent(f);
   }
 
+  printf("collector/files: Checked %ld files\n", files);
   report_add_check(report, stickybit);
   report_add_check(report, nouser);
   report_add_check(report, nogroup);
