@@ -109,6 +109,7 @@ int collector_rpm_evaluate(struct report* report) {
 
 
   report_add_check_package_present(report, "cis", "1.3.1", "Install AIDE", "aide");
+  report_add_check_package_present(report, "cis", "6.1.1", "Enable anacron Daemon", "cronie-anacron");
   rpmFreeRpmrc();
 
   report_add_check(report, redhat_key);

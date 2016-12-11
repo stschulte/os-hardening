@@ -112,6 +112,7 @@ int collector_services_evaluate(struct report* report) {
   struct check* avahi = check_new("cis", "3.3", "Disable Avahi Server", CHECK_PASSED);
   struct check* cups  = check_new("cis", "3.4", "Disable Print Server - CUPS", CHECK_PASSED);
   struct check* nfs   = check_new("cis", "3.8", "Disable NFS and RPC", CHECK_PASSED);
+  struct check* cron  = check_new("cis", "6.1.2", "Enable crond Daemon", CHECK_PASSED);
 
   check_initd(chargend, "chargen-dgram", DESIRED_DISABLED);
   check_initd(chargens, "chargen-stream", DESIRED_DISABLED);
@@ -128,6 +129,7 @@ int collector_services_evaluate(struct report* report) {
   check_systemd(connection, nfs, "rpcbind.service", DESIRED_DISABLED);
   check_systemd(connection, nfs, "rpcidmapd.service", DESIRED_DISABLED);
   check_systemd(connection, nfs, "rpcsvcgssd.service", DESIRED_DISABLED);
+  check_systemd(connection, cron, "crond.service", DESIRED_ENABLED);
 #else
   check_initd(avahi, "avahi-daemon", DESIRED_DISABLED);
   check_initd(cups , "cups", DESIRED_DISABLED);
@@ -136,6 +138,7 @@ int collector_services_evaluate(struct report* report) {
   check_initd(nfs , "rpcbind", DESIRED_DISABLED);
   check_initd(nfs , "rpcidmapd", DESIRED_DISABLED);
   check_initd(nfs , "rpcsvcgssd", DESIRED_DISABLED);
+  check_initd(cron, "crond", DESIRED_ENABLED);
 #endif
 
   report_add_check(report, chargend);
@@ -148,6 +151,7 @@ int collector_services_evaluate(struct report* report) {
   report_add_check(report, avahi);
   report_add_check(report, cups);
   report_add_check(report, nfs);
+  report_add_check(report, cron);
 
 #ifdef HAVE_SYSTEMD
   g_object_unref(connection);
